@@ -1,11 +1,25 @@
 # Claude Code — Project Map
 
+> **This file must be kept up to date.** Whenever you add files, create stubs, extract new sources, or change the build — update the relevant section here. This is the single source of truth for what's in this repo and how it works.
+
 ## How to Build & Run
 
 ```bash
 bun install          # install dependencies
 bun run build        # bundles to dist/cli.js (~23MB)
 bun dist/cli.js      # run it
+```
+
+## Using with Agent SDK (in Tauri or other apps)
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+const response = query({
+  prompt: "your prompt",
+  options: {
+    pathToClaudeCodeExecutable: "/path/to/claude-code/dist/cli.js",
+  },
+});
 ```
 
 ## Project Structure
@@ -77,7 +91,9 @@ claude-code/
 │   │   ├── compact/               # Context compaction
 │   │   │   ├── snipCompact.ts     # [STUB] Feature-gated (HISTORY_SNIP)
 │   │   │   └── cachedMicrocompact.ts  # [STUB] Feature-gated
-│   │   └── contextCollapse/       # [STUB] Not in leak
+│   │   ├── contextCollapse/       # [STUB] Not in leak
+│   │   ├── plugins/               # Plugin installation & management
+│   │   └── tools/                 # Tool execution (StreamingToolExecutor)
 │   │
 │   ├── native-ts/                 # Pure TypeScript ports of native modules
 │   │   ├── yoga-layout/           # Flexbox engine (port of Meta's Yoga)
@@ -98,9 +114,34 @@ claude-code/
 │   │   ├── settings/              # Settings system
 │   │   ├── model/                 # Model selection, aliases
 │   │   ├── auth.ts                # Authentication
+│   │   ├── hooks/                 # Hook execution engine (155 files total)
+│   │   │   ├── AsyncHookRegistry.ts    # Hook registration & lifecycle
+│   │   │   ├── execAgentHook.ts        # Agent-spawning hooks
+│   │   │   ├── execHttpHook.ts         # HTTP webhook hooks
+│   │   │   ├── execPromptHook.ts       # Prompt-based hooks
+│   │   │   ├── hookEvents.ts           # All hook event types
+│   │   │   └── hooksConfigManager.ts   # settings.json hook config
+│   │   ├── plugins/               # Plugin system (65+ files)
+│   │   │   ├── pluginLoader.ts         # Loads plugins from directories
+│   │   │   ├── loadPluginAgents.ts     # Agent definitions from plugins
+│   │   │   ├── loadPluginCommands.ts   # Slash commands from plugins
+│   │   │   ├── loadPluginHooks.ts      # Hooks from plugins
+│   │   │   ├── schemas.ts             # plugin.json schema validation
+│   │   │   └── marketplaceManager.ts  # Marketplace browsing/install
+│   │   ├── permissions/           # Permission & auto-mode classifier
+│   │   │   ├── yoloClassifier.ts  # 52KB — auto-mode LLM classifier logic
+│   │   │   ├── bashClassifier.ts  # Bash-specific classifier
+│   │   │   ├── classifierDecision.ts  # Safe tool allowlist
+│   │   │   ├── autoModeState.ts   # Auto-mode state management
+│   │   │   └── yolo-classifier-prompts/  # [MISSING] DCE'd by feature flag
 │   │   ├── protectedNamespace.ts  # [STUB] Ant-only
 │   │   └── filePersistence/
 │   │       └── types.ts           # [STUB]
+│   │
+│   ├── skills/                    # Built-in skills (23 files)
+│   │   ├── bundledSkills.ts       # Skill registry
+│   │   ├── loadSkillsDir.ts       # Load skills from directories
+│   │   └── bundled/               # 16 bundled skills (batch, claudeApi, debug, loop, etc.)
 │   │
 │   ├── assistant/
 │   │   ├── sessionHistory.ts      # Session history
@@ -113,9 +154,7 @@ claude-code/
 │   │   └── connectorText.ts       # [STUB]
 │   ├── bridge/                    # Cloud session bridging
 │   ├── coordinator/               # Multi-agent coordinator
-│   ├── plugins/                   # Plugin system
-│   ├── skills/                    # Built-in skills
-│   │   └── bundled/verify/        # [STUB] Placeholder .md files
+│   ├── plugins/                   # Plugin system entry
 │   ├── bootstrap/                 # Bootstrap/startup state
 │   └── voice/                     # Voice mode
 │
@@ -153,19 +192,27 @@ claude-code/
 │   │   └── computer-use-input/    # Input device bridge
 │   │       └── js/index.js        # JS loader for Rust binary
 │   │
-│   ├── @anthropic-ai/            # Anthropic SDK sources (105 files)
-│   │   ├── sandbox-runtime/       # Sandbox system (14 files, 162KB)
-│   │   │   └── dist/
-│   │   │       ├── sandbox/
-│   │   │       │   ├── sandbox-manager.js    # 31KB — core orchestrator
-│   │   │       │   ├── sandbox-config.js     # Config/schema
-│   │   │       │   ├── macos-sandbox-utils.js # 28KB — macOS Seatbelt profiles
-│   │   │       │   ├── linux-sandbox-utils.js # 42KB — Linux namespaces + seccomp
-│   │   │       │   ├── generate-seccomp-filter.js # 12KB — raw BPF bytecode gen
-│   │   │       │   ├── http-proxy.js         # HTTP egress proxy
-│   │   │       │   ├── socks-proxy.js        # SOCKS proxy
-│   │   │       │   └── sandbox-violation-store.js
-│   │   │       └── utils/
+│   ├── @anthropic-ai/            # Anthropic SDK sources (105+ files)
+│   │   ├── sandbox-runtime/       # Sandbox system (17 files, 180KB)
+│   │   │   ├── dist/
+│   │   │   │   ├── sandbox/
+│   │   │   │   │   ├── sandbox-manager.js    # 31KB — core orchestrator
+│   │   │   │   │   ├── sandbox-config.js     # Config/schema
+│   │   │   │   │   ├── sandbox-schemas.js    # Zod schemas
+│   │   │   │   │   ├── parent-proxy.js       # 17KB — parent process proxy
+│   │   │   │   │   ├── macos-sandbox-utils.js # 28KB — macOS Seatbelt profiles
+│   │   │   │   │   ├── linux-sandbox-utils.js # 42KB — Linux namespaces + seccomp
+│   │   │   │   │   ├── generate-seccomp-filter.js # 12KB — raw BPF bytecode gen
+│   │   │   │   │   ├── http-proxy.js         # HTTP egress proxy
+│   │   │   │   │   ├── socks-proxy.js        # SOCKS proxy
+│   │   │   │   │   └── sandbox-violation-store.js
+│   │   │   │   └── utils/
+│   │   │   │       └── config-loader.js      # Config file loader
+│   │   │   └── vendor/
+│   │   │       ├── seccomp-src/
+│   │   │       │   ├── apply-seccomp.c       # C — seccomp BPF loader
+│   │   │       │   └── seccomp-unix-block.c  # C — Unix socket blocker
+│   │   │       └── seccomp/                  # Precompiled binaries (arm64 + x64)
 │   │   │
 │   │   ├── mcpb/                  # MCP Bundle tools (11 files, 75KB)
 │   │   │   └── dist/
@@ -194,7 +241,7 @@ claude-code/
 │   │   └── foundry-sdk/           # Foundry (8 files, 16KB)
 │   │       └── client.mjs         # Foundry client with custom auth
 │   │
-│   └── downloads/                 # Additional packages downloaded from npm
+│   └── downloads/                 # Additional packages from npm + GCS
 │       ├── tokenizer/             # Claude's BPE tokenizer
 │       │   ├── claude.json        # 680KB — full vocabulary (64,739 tokens)
 │       │   ├── index.ts           # Tokenizer implementation
@@ -204,13 +251,38 @@ claude-code/
 │       │   ├── dist/server.cjs    # 838KB — trace server
 │       │   └── viewer/dist/       # Web UI (HTML + JS + CSS)
 │       │
-│       └── claude-agent-sdk/      # Agent SDK package
-│           ├── sdk.mjs            # Main SDK — spawns CLI as subprocess
-│           ├── sdk.d.ts           # Full type definitions
-│           ├── bridge.mjs         # Session bridge protocol
-│           ├── browser-sdk.js     # Browser-compatible SDK
-│           ├── embed.js           # Embedding helpers
-│           └── manifest.json      # SDK manifest
+│       ├── claude-agent-sdk/      # Agent SDK package
+│       │   ├── sdk.mjs            # Main SDK — spawns CLI as subprocess
+│       │   ├── sdk.d.ts           # Full type definitions
+│       │   ├── bridge.mjs         # Session bridge protocol
+│       │   ├── browser-sdk.js     # Browser-compatible SDK
+│       │   ├── embed.js           # Embedding helpers
+│       │   └── manifest.json      # SDK manifest
+│       │
+│       └── official-plugins/      # Official plugin marketplace (from GCS bucket)
+│           └── marketplaces/claude-plugins-official/
+│               ├── plugins/       # 32 official plugins
+│               │   ├── feature-dev/       # Feature dev with agents
+│               │   ├── code-review/       # Code review
+│               │   ├── plugin-dev/        # Plugin development tools
+│               │   ├── mcp-server-dev/    # MCP server builder
+│               │   ├── claude-code-setup/ # Automation recommender
+│               │   ├── claude-md-management/ # CLAUDE.md improver
+│               │   ├── skill-creator/     # Skill creation
+│               │   ├── frontend-design/   # Frontend design generation
+│               │   ├── security-guidance/ # Security review
+│               │   ├── agent-sdk-dev/     # Agent SDK tools
+│               │   ├── hookify/           # Hook creation
+│               │   ├── commit-commands/   # Git commit helpers
+│               │   ├── playground/        # Plugin playground
+│               │   ├── ralph-loop/        # Looping agent
+│               │   ├── math-olympiad/     # Math problem solving
+│               │   ├── typescript-lsp/    # TypeScript LSP
+│               │   ├── pyright-lsp/       # Python LSP
+│               │   ├── rust-analyzer-lsp/ # Rust LSP
+│               │   ├── gopls-lsp/         # Go LSP
+│               │   └── ... (13 more LSP + output style plugins)
+│               └── external_plugins/  # 3rd-party plugins (asana, context7, discord)
 │
 ├── shims/                         # Build-time shims
 │   ├── bun-bundle.ts              # Runtime shim for feature() — returns false
@@ -268,16 +340,24 @@ ABLATION_BASELINE, DUMP_SYSTEM_PROMPT
 - MCP server support
 - Slash commands (/help, /clear, /compact, /resume, etc.)
 - Session persistence and resume
-- Plugin system
+- Plugin system (full source: loading, agents, commands, hooks, marketplace)
+- Hook system (full source: async registry, agent/HTTP/prompt hooks, SSRF guard)
+- Skill system (full source: 16 bundled skills, skill loader, MCP skill builders)
 - Vim mode
 - Sandbox mode (real @anthropic-ai/sandbox-runtime from npm)
 - AWS Bedrock / GCP Vertex / Foundry backends (real SDKs from npm)
 - Agent SDK integration (set `pathToClaudeCodeExecutable` to `dist/cli.js`)
+- System prompt (full source in src/constants/prompts.ts)
 
 ### Not Working
 - **Computer Use** — full logic extracted (137KB toolCalls.ts) but needs native
   Swift/Rust binaries for screen capture and input. Could be rebuilt using macOS
-  system commands (screencapture, osascript, pbcopy/pbpaste).
+  system commands (screencapture, osascript, pbcopy/pbpaste). The 22KB executor
+  wrapper (src/utils/computerUse/executor.ts) shows the exact native API surface.
+- **Auto-mode classifier prompts** — the classifier logic is all there (52KB
+  yoloClassifier.ts) but the 3 prompt .txt files were DCE'd by the
+  TRANSCRIPT_CLASSIFIER feature flag. The code shows the expected format
+  (allow/soft_deny/environment rules with XML tags).
 - **Feature-flagged features** — voice, coordinator, ultraplan, etc. All disabled
   via feature() shim. The source is there but many depend on backend infra.
 - **Ant-only tools** — TungstenTool, REPLTool, SuggestBackgroundPRTool. Internal
@@ -289,11 +369,14 @@ ABLATION_BASELINE, DUMP_SYSTEM_PROMPT
 |--------|--------|-------|------|
 | Original leak | .map file on R2 bucket | 1,929 | Full src/ directory |
 | npm source map | `cli.js.map` in `@anthropic-ai/claude-code` | 4,756 total | Everything bundled into the CLI |
-| npm source map | Same file, `@ant/*` entries | 20 | Computer use + Chrome (private) |
+| npm source map | Same file, `@ant/*` entries | 20 | Computer use + Chrome (private, not on npm) |
 | npm source map | Same file, `@anthropic-ai/*` entries | 105 | SDK, sandbox, mcpb, bedrock, vertex, foundry |
-| npm registry | `npm pack @anthropic-ai/tokenizer` | 15 | Claude's BPE tokenizer + vocabulary |
+| npm registry | `npm pack @anthropic-ai/tokenizer` | 15 | Claude's BPE tokenizer + 64,739-token vocabulary |
 | npm registry | `npm pack @anthropic-ai/claude-trace` | 6 | OTEL session trace viewer |
 | npm registry | `npm pack @anthropic-ai/claude-agent-sdk` | 18 | Agent SDK source + types |
+| npm registry | `npm pack @anthropic-ai/sandbox-runtime` | 10 | Extra files not in source map (parent-proxy, seccomp C source) |
+| GCS bucket | `storage.googleapis.com/claude-code-dist-*` | 334 | Official plugin marketplace (32 plugins) |
+| GCS bucket | Same bucket, `manifest.json` per version | 228 versions | Native binary manifests (all platforms, checksums) |
 
 ## All @anthropic-ai npm Packages (as of 2026-03-31)
 
@@ -305,7 +388,7 @@ ABLATION_BASELINE, DUMP_SYSTEM_PROMPT
 | `@anthropic-ai/bedrock-sdk` | Yes | stubs/@anthropic-ai/bedrock-sdk/ | **Source from map + npm install** |
 | `@anthropic-ai/vertex-sdk` | Yes | stubs/@anthropic-ai/vertex-sdk/ | **Source from map + npm install** |
 | `@anthropic-ai/foundry-sdk` | Yes | stubs/@anthropic-ai/foundry-sdk/ | **Source from map + npm install** |
-| `@anthropic-ai/sandbox-runtime` | Yes | stubs/@anthropic-ai/sandbox-runtime/ | **Source from map + npm install** |
+| `@anthropic-ai/sandbox-runtime` | Yes | stubs/@anthropic-ai/sandbox-runtime/ | **Source from map + npm + extras** |
 | `@anthropic-ai/mcpb` | Yes | stubs/@anthropic-ai/mcpb/ | **Source from map + npm install** |
 | `@anthropic-ai/tokenizer` | Yes | stubs/downloads/tokenizer/ | **Downloaded** |
 | `@anthropic-ai/claude-trace` | Yes | stubs/downloads/claude-trace/ | **Downloaded** |
@@ -313,3 +396,32 @@ ABLATION_BASELINE, DUMP_SYSTEM_PROMPT
 | `@ant/claude-for-chrome-mcp` | **No** (private) | stubs/@ant/claude-for-chrome-mcp/ | **Source from map** |
 | `@ant/computer-use-swift` | **No** (private) | stubs/@ant/computer-use-swift/ | **JS loader only** (binary missing) |
 | `@ant/computer-use-input` | **No** (private) | stubs/@ant/computer-use-input/ | **JS loader only** (binary missing) |
+
+## Open GCS Bucket (no auth required)
+
+```
+https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/
+├── claude-code-releases/
+│   ├── {version}/                 # 228 versions (1.0.100 → 2.1.88)
+│   │   ├── manifest.json          # Platform checksums and sizes
+│   │   ├── darwin-arm64/claude    # macOS ARM binary
+│   │   ├── darwin-x64/claude     # macOS Intel binary
+│   │   ├── linux-arm64/claude    # Linux ARM binary
+│   │   ├── linux-x64/claude      # Linux x64 binary
+│   │   ├── win32-x64/claude.exe  # Windows binary
+│   │   └── ...
+│   └── plugins/
+│       └── claude-plugins-official/
+│           ├── latest             # Points to current hash
+│           └── {hash}.zip         # Plugin marketplace bundles
+└── test-uploads/                  # Just a test.txt
+```
+
+## Keeping This File Updated
+
+**When you modify this repo, update this file:**
+- Added a new stub? Add it to the structure tree with `[STUB]` tag
+- Extracted new source? Add to extraction summary table
+- Found a new npm package? Add to the packages table
+- Changed what works/doesn't? Update the status section
+- New build steps? Update "How to Build & Run"
