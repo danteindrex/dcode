@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { getOauthConfig } from 'src/constants/oauth.js'
 import { getOrganizationUUID } from 'src/services/oauth/client.js'
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js'
 import { getClaudeAIOAuthTokens } from '../auth.js'
 import { toError } from '../errors.js'
 import { logError } from '../log.js'
@@ -24,6 +24,35 @@ export type EnvironmentListResponse = {
   last_id: string | null
 }
 
+export const DEFAULT_CLOUD_ENVIRONMENT_KIND: EnvironmentKind =
+  'anthropic_cloud'
+export const DEFAULT_CLOUD_ENVIRONMENT_TYPE = 'anthropic'
+
+export function buildDefaultCloudEnvironmentPayload(
+  name: string,
+  description = '',
+) {
+  return {
+    name,
+    kind: DEFAULT_CLOUD_ENVIRONMENT_KIND,
+    description,
+    config: {
+      environment_type: DEFAULT_CLOUD_ENVIRONMENT_TYPE,
+      cwd: '/home/user',
+      init_script: null,
+      environment: {},
+      languages: [
+        { name: 'python', version: '3.11' },
+        { name: 'node', version: '20' },
+      ],
+      network_config: {
+        allowed_hosts: [],
+        allow_default_hosts: true,
+      },
+    },
+  }
+}
+
 /**
  * Fetches the list of available environments from the Environment API
  * @returns Promise<EnvironmentResource[]> Array of available environments
@@ -42,7 +71,7 @@ export async function fetchEnvironments(): Promise<EnvironmentResource[]> {
     throw new Error('Unable to get organization UUID')
   }
 
-  const url = `${getOauthConfig().BASE_API_URL}/v1/environment_providers`
+  const url = `${getAppBackendBaseUrl()}/v1/environment_providers`
 
   try {
     const headers = {
@@ -85,28 +114,10 @@ export async function createDefaultCloudEnvironment(
     throw new Error('Unable to get organization UUID')
   }
 
-  const url = `${getOauthConfig().BASE_API_URL}/v1/environment_providers/cloud/create`
+  const url = `${getAppBackendBaseUrl()}/v1/environment_providers/cloud/create`
   const response = await axios.post<EnvironmentResource>(
     url,
-    {
-      name,
-      kind: 'anthropic_cloud',
-      description: '',
-      config: {
-        environment_type: 'anthropic',
-        cwd: '/home/user',
-        init_script: null,
-        environment: {},
-        languages: [
-          { name: 'python', version: '3.11' },
-          { name: 'node', version: '20' },
-        ],
-        network_config: {
-          allowed_hosts: [],
-          allow_default_hosts: true,
-        },
-      },
-    },
+    buildDefaultCloudEnvironmentPayload(name),
     {
       headers: {
         ...getOAuthHeaders(accessToken),

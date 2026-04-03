@@ -13,7 +13,7 @@
 
 import type { ClientRequest, IncomingMessage } from 'http'
 import WebSocket from 'ws'
-import { getOauthConfig } from '../constants/oauth.js'
+import { getAppBackendBaseUrl } from './backend/targets.js'
 import {
   checkAndRefreshOAuthTokenIfNeeded,
   getClaudeAIOAuthTokens,
@@ -131,8 +131,8 @@ export async function connectVoiceStream(
   // browser-class JA3 fingerprint, so CF lets it through).
   const wsBaseUrl =
     process.env.VOICE_STREAM_BASE_URL ||
-    getOauthConfig()
-      .BASE_API_URL.replace('https://', 'wss://')
+    getAppBackendBaseUrl()
+      .replace('https://', 'wss://')
       .replace('http://', 'ws://')
 
   if (process.env.VOICE_STREAM_BASE_URL) {

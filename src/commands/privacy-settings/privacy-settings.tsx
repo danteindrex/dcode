@@ -1,9 +1,10 @@
 import * as React from 'react';
+import { getPrivacySettingsUrl } from '../../constants/product.js';
 import { type GroveDecision, GroveDialog, PrivacySettingsDialog } from '../../components/grove/Grove.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../../services/analytics/index.js';
 import { getGroveNoticeConfig, getGroveSettings, isQualifiedForGrove } from '../../services/api/grove.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
-const FALLBACK_MESSAGE = 'Review and manage your privacy settings at https://claude.ai/settings/data-privacy-controls';
+const FALLBACK_MESSAGE = `Review and manage your privacy settings at ${getPrivacySettingsUrl()}`;
 export async function call(onDone: LocalJSXCommandOnDone): Promise<React.ReactNode | null> {
   const qualified = await isQualifiedForGrove();
   if (!qualified) {

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getOauthConfig } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import { isClaudeAISubscriber } from '../../utils/auth.js'
 import { logForDebugging } from '../../utils/debug.js'
 import { getOAuthHeaders, prepareApiRequest } from '../../utils/teleport/api.js'
@@ -21,7 +21,7 @@ export async function fetchUltrareviewQuota(): Promise<UltrareviewQuotaResponse 
   try {
     const { accessToken, orgUUID } = await prepareApiRequest()
     const response = await axios.get<UltrareviewQuotaResponse>(
-      `${getOauthConfig().BASE_API_URL}/v1/ultrareview/quota`,
+      `${getAppBackendBaseUrl()}/v1/ultrareview/quota`,
       {
         headers: {
           ...getOAuthHeaders(accessToken),

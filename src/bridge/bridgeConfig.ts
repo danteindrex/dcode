@@ -11,7 +11,10 @@
  * using IPC auth) use the Override getters directly.
  */
 
-import { getOauthConfig } from '../constants/oauth.js'
+import {
+  getAppBackendBaseUrl,
+  getSessionIngressBaseUrl,
+} from '../services/backend/targets.js'
 import { getClaudeAIOAuthTokens } from '../utils/auth.js'
 
 /** Ant-only dev override: CLAUDE_BRIDGE_OAUTH_TOKEN, else undefined. */
@@ -44,5 +47,19 @@ export function getBridgeAccessToken(): string | undefined {
  * OAuth config. Always returns a URL.
  */
 export function getBridgeBaseUrl(): string {
-  return getBridgeBaseUrlOverride() ?? getOauthConfig().BASE_API_URL
+  return getBridgeBaseUrlOverride() ?? getAppBackendBaseUrl()
+}
+
+/**
+ * Session-ingress base URL for bridge transports. This can be split from the
+ * main API backend when reads/writes terminate on a different service.
+ */
+export function getBridgeSessionIngressUrl(): string {
+  if (
+    process.env.USER_TYPE === 'ant' &&
+    process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
+  ) {
+    return process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
+  }
+  return getSessionIngressBaseUrl()
 }

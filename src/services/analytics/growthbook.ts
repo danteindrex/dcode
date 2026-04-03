@@ -20,6 +20,7 @@ import {
   type GitHubActionsMetadata,
   getUserForGrowthBook,
 } from '../../utils/user.js'
+import { getGrowthbookBaseUrl } from '../backend/targets.js'
 import {
   is1PEventLoggingEnabled,
   logGrowthBookExperimentTo1P,
@@ -502,8 +503,9 @@ const getGrowthBookClient = memoize(
     }
     const baseUrl =
       process.env.USER_TYPE === 'ant'
-        ? process.env.CLAUDE_CODE_GB_BASE_URL || 'https://api.anthropic.com/'
-        : 'https://api.anthropic.com/'
+        ? process.env.CLAUDE_CODE_GB_BASE_URL ||
+          `${getGrowthbookBaseUrl()}/`
+        : `${getGrowthbookBaseUrl()}/`
 
     // Skip auth if trust hasn't been established yet
     // This prevents executing apiKeyHelper commands before the trust dialog

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getOauthConfig } from '../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../services/backend/targets.js'
 import type { SDKMessage } from '../entrypoints/agentSdkTypes.js'
 import { logForDebugging } from '../utils/debug.js'
 import { getOAuthHeaders, prepareApiRequest } from '../utils/teleport/api.js'
@@ -27,13 +27,17 @@ export type HistoryAuthCtx = {
   headers: Record<string, string>
 }
 
+export function getSessionEventsBaseUrl(sessionId: string): string {
+  return `${getAppBackendBaseUrl()}/v1/sessions/${sessionId}/events`
+}
+
 /** Prepare auth + headers + base URL once, reuse across pages. */
 export async function createHistoryAuthCtx(
   sessionId: string,
 ): Promise<HistoryAuthCtx> {
   const { accessToken, orgUUID } = await prepareApiRequest()
   return {
-    baseUrl: `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/events`,
+    baseUrl: getSessionEventsBaseUrl(sessionId),
     headers: {
       ...getOAuthHeaders(accessToken),
       'anthropic-beta': 'ccr-byoc-2025-07-29',

@@ -30,6 +30,7 @@ import { getOauthConfig } from './constants/oauth.js';
 import { getRemoteSessionUrl } from './constants/product.js';
 import { getSystemContext, getUserContext } from './context.js';
 import { init, initializeTelemetryAfterTrust } from './entrypoints/init.js';
+import { getAppBackendBaseUrl } from './services/backend/targets.js';
 import { addToHistory } from './history.js';
 import type { Root } from './ink.js';
 import { launchRepl } from './replLauncher.js';
@@ -115,7 +116,7 @@ import { getGhAuthStatus } from './utils/github/ghAuthStatus.js';
 import { safeParseJSON } from './utils/json.js';
 import { logError } from './utils/log.js';
 import { getModelDeprecationWarning } from './utils/model/deprecation.js';
-import { getDefaultMainLoopModel, getUserSpecifiedModelSetting, normalizeModelStringForAPI, parseUserSpecifiedModel } from './utils/model/model.js';
+import { getDefaultMainLoopModel, getDynamicDefaultMainLoopModelSetting, getUserSpecifiedModelSetting, normalizeModelStringForAPI, parseUserSpecifiedModel } from './utils/model/model.js';
 import { ensureModelStringsInitialized } from './utils/model/modelStrings.js';
 import { PERMISSION_MODES } from './utils/permissions/PermissionMode.js';
 import { checkAndDisableBypassPermissions, getAutoModeEnabledStateIfCached, initializeToolPermissionContext, initialPermissionModeFromCLI, isDefaultPermissionModeAuto, parseToolListFromCLI, removeDangerousPermissions, stripDangerousPermissionsForAutoMode, verifyAutoModeGateAccess } from './utils/permissions/permissionSetup.js';
@@ -1320,7 +1321,7 @@ async function run(): Promise<CommanderCommand> {
         // Use ANTHROPIC_BASE_URL if set (by EnvManager), otherwise use OAuth config
         // This ensures consistency with session ingress API in all environments
         const config: FilesApiConfig = {
-          baseUrl: process.env.ANTHROPIC_BASE_URL || getOauthConfig().BASE_API_URL,
+          baseUrl: process.env.ANTHROPIC_BASE_URL || getAppBackendBaseUrl(),
           oauthToken: sessionToken,
           sessionId: fileSessionId
         };
@@ -2111,7 +2112,10 @@ async function run(): Promise<CommanderCommand> {
     setMainLoopModelOverride(effectiveModel);
 
     // Compute resolved model for hooks (use user-specified model at launch)
-    setInitialMainLoopModel(getUserSpecifiedModelSetting() || null);
+    setInitialMainLoopModel(
+      getUserSpecifiedModelSetting() ??
+        getDynamicDefaultMainLoopModelSetting(),
+    );
     const initialMainLoopModel = getInitialMainLoopModel();
     const resolvedInitialModel = parseUserSpecifiedModel(initialMainLoopModel ?? getDefaultMainLoopModel());
     let advisorModel: string | undefined;
@@ -2299,7 +2303,7 @@ async function run(): Promise<CommanderCommand> {
       // Validate that the active token's org matches forceLoginOrgUUID (if set
       // in managed settings). Runs after onboarding so managed settings and
       // login state are fully loaded.
-      const orgValidation = await validateForceLoginOrg();
+      const orgValidation = await validateForceLoginOrg(effectiveModel ?? null);
       if (!orgValidation.valid) {
         await exitWithError(root, orgValidation.message);
       }
@@ -2611,12 +2615,11 @@ async function run(): Promise<CommanderCommand> {
       sessionStartHooksPromise?.catch(() => {});
       profileCheckpoint('before_validateForceLoginOrg');
       // Validate org restriction for non-interactive sessions
-      const orgValidation = await validateForceLoginOrg();
+      const orgValidation = await validateForceLoginOrg(effectiveModel ?? null);
       if (!orgValidation.valid) {
         process.stderr.write(orgValidation.message + '\n');
         process.exit(1);
       }
-
       // Headless mode supports all prompt commands and some local commands
       // If disableSlashCommands is true, return empty array
       const commandsHeadless = disableSlashCommands ? [] : commands.filter(command => command.type === 'prompt' && !command.disableNonInteractive || command.type === 'local' && command.supportsNonInteractive);
@@ -4098,20 +4101,32 @@ async function run(): Promise<CommanderCommand> {
   // claude auth
 
   const auth = program.command('auth').description('Manage authentication').configureHelp(createSortedHelpConfig());
-  auth.command('login').description('Sign in to your Anthropic account').option('--email <email>', 'Pre-populate email address on the login page').option('--sso', 'Force SSO login flow').option('--console', 'Use Anthropic Console (API usage billing) instead of Claude subscription').option('--claudeai', 'Use Claude subscription (default)').action(async ({
+  auth.command('login').description('Sign in for a provider').option('--provider <provider>', 'Provider to authenticate: anthropic, openai-codex, openai, gemini, or ollama').option('--email <email>', 'Pre-populate email address on the login page').option('--sso', 'Force SSO login flow').option('--console', 'Use Anthropic Console (API usage billing) instead of Claude subscription').option('--claudeai', 'Use Claude subscription (default)').action(async ({
+    provider,
     email,
     sso,
     console: useConsole,
     claudeai
   }: {
+    provider?: string;
     email?: string;
     sso?: boolean;
     console?: boolean;
     claudeai?: boolean;
   }) => {
     const {
-      authLogin
+      authLogin,
+      authLoginOpenAICodex,
+      authLoginProviderSetup
     } = await import('./cli/handlers/auth.js');
+    if (provider === 'openai-codex' || provider === 'codex') {
+      await authLoginOpenAICodex();
+      return;
+    }
+    if (provider === 'openai' || provider === 'gemini' || provider === 'ollama') {
+      await authLoginProviderSetup(provider);
+      return;
+    }
     await authLogin({
       email,
       sso,
@@ -4311,7 +4326,7 @@ async function run(): Promise<CommanderCommand> {
     }
   }
 
-  // Remote Control command — connect local environment to claude.ai/code.
+  // Remote Control command — connect local environment to the web app.
   // The actual command is intercepted by the fast-path in cli.tsx before
   // Commander.js runs, so this registration exists only for help output.
   // Always hidden: isBridgeEnabled() at this point (before enableConfigs)
@@ -4322,7 +4337,7 @@ async function run(): Promise<CommanderCommand> {
   if (feature('BRIDGE_MODE')) {
     program.command('remote-control', {
       hidden: true
-    }).alias('rc').description('Connect your local environment for remote-control sessions via claude.ai/code').action(async () => {
+    }).alias('rc').description('Connect your local environment for remote-control sessions via the web app').action(async () => {
       // Unreachable — cli.tsx fast-path handles this command before main.tsx loads.
       // If somehow reached, delegate to bridgeMain.
       const {
@@ -4331,6 +4346,72 @@ async function run(): Promise<CommanderCommand> {
       await bridgeMain(process.argv.slice(3));
     });
   }
+  program.command('webapp-control [action]').description('Start or manage the local control-plane web app').action(async (action?: string) => {
+    const {
+      WEBAPP_CONTROL_USAGE,
+      isWebappControlAction,
+      runWebappControlAction
+    } = await import('./commands/webapp-control/webapp-control.js');
+    const selectedAction = (action || 'start').trim() || 'start';
+    if (!isWebappControlAction(selectedAction)) {
+      process.stderr.write(`${WEBAPP_CONTROL_USAGE}\n`);
+      process.exitCode = 1;
+      return;
+    }
+    process.stdout.write(`${await runWebappControlAction(selectedAction)}\n`);
+    process.exit(0);
+  });
+  program.command('webapp-control-server', {
+    hidden: true
+  }).option('--host <string>', 'Bind address', '127.0.0.1').option('--port <number>', 'HTTP port', '0').action(async (opts: {
+    host: string
+    port: string
+  }) => {
+    const [{
+      startControlPlaneServer
+    }, {
+      hostedChannelRegistry
+    }, {
+      clearPersistedControlPlaneRuntimeIfOwned,
+      writePersistedControlPlaneRuntime
+    }] = await Promise.all([
+      import('./controlPlane/server.js'),
+      import('./hostedControlPlane/channel.js'),
+      import('./controlPlane/runtime.js'),
+    ]);
+    const server = await startControlPlaneServer({
+      host: opts.host,
+      port: Number.parseInt(opts.port, 10) || 0
+    });
+    hostedChannelRegistry.register(String(process.pid), {
+      machineId: process.env.COMPUTERNAME || process.env.HOSTNAME || 'local',
+    });
+    writePersistedControlPlaneRuntime({
+      pid: process.pid,
+      url: server.url,
+      startedAt: new Date().toISOString()
+    });
+    let shuttingDown = false;
+    const shutdown = async () => {
+      if (shuttingDown) {
+        return;
+      }
+      shuttingDown = true;
+      clearPersistedControlPlaneRuntimeIfOwned(process.pid);
+      await server.close();
+      process.exit(0);
+    };
+    process.on('SIGINT', () => {
+      void shutdown();
+    });
+    process.on('SIGTERM', () => {
+      void shutdown();
+    });
+    process.on('exit', () => {
+      clearPersistedControlPlaneRuntimeIfOwned(process.pid);
+    });
+    await new Promise<void>(() => {});
+  });
   if (feature('KAIROS')) {
     program.command('assistant [sessionId]').description('Attach the REPL as a client to a running bridge session. Discovers sessions via API if no sessionId given.').action(() => {
       // Argv rewriting above should have consumed `assistant [id]`

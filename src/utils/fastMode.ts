@@ -1,6 +1,8 @@
 import axios from 'axios'
-import { getOauthConfig, OAUTH_BETA_HEADER } from 'src/constants/oauth.js'
+import { OAUTH_BETA_HEADER } from 'src/constants/oauth.js'
+import { PRODUCT_URL } from 'src/constants/product.js'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js'
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js'
 import {
   getIsNonInteractiveSession,
   getKairosActive,
@@ -90,7 +92,7 @@ export function getFastModeUnavailableReason(): string | null {
     !isInBundledMode() &&
     getFeatureValue_CACHED_MAY_BE_STALE('tengu_marble_sandcastle', false)
   ) {
-    return 'Fast mode requires the native binary · Install from: https://claude.com/product/claude-code'
+    return `Fast mode requires the native binary · Install from: ${PRODUCT_URL}`
   }
 
   // Not available in the SDK unless explicitly opted in via --settings.
@@ -367,7 +369,7 @@ type FastModeResponse = {
 async function fetchFastModeStatus(
   auth: { accessToken: string } | { apiKey: string },
 ): Promise<FastModeResponse> {
-  const endpoint = `${getOauthConfig().BASE_API_URL}/api/claude_code_penguin_mode`
+  const endpoint = `${getAppBackendBaseUrl()}/api/claude_code_penguin_mode`
   const headers: Record<string, string> =
     'accessToken' in auth
       ? {

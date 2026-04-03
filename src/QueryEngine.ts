@@ -59,6 +59,7 @@ import {
 import { headlessProfilerCheckpoint } from './utils/headlessProfiler.js'
 import { registerStructuredOutputEnforcement } from './utils/hooks/hookHelpers.js'
 import { getInMemoryErrors } from './utils/log.js'
+import { logForDebugging } from './utils/debug.js'
 import { countToolCalls, SYNTHETIC_MESSAGES } from './utils/messages.js'
 import {
   getMainLoopModel,
@@ -274,7 +275,6 @@ export class QueryEngine {
     const initialMainLoopModel = userSpecifiedModel
       ? parseUserSpecifiedModel(userSpecifiedModel)
       : getMainLoopModel()
-
     const initialThinkingConfig: ThinkingConfig = thinkingConfig
       ? thinkingConfig
       : shouldEnableThinkingByDefault() !== false
@@ -486,7 +486,6 @@ export class QueryEngine {
     }))
 
     const mainLoopModel = modelFromUserInput ?? initialMainLoopModel
-
     // Recreate after processing the prompt to pick up updated messages and
     // model (from slash commands).
     processUserInputContext = {

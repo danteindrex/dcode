@@ -28,8 +28,14 @@ const TIERS = [
  * the pinned ANTHROPIC_DEFAULT_*_MODEL env vars.
  */
 export const get3PModelCapabilityOverride = memoize(
-  (model: string, capability: ModelCapabilityOverride): boolean | undefined => {
+  (
+    model: string | null | undefined,
+    capability: ModelCapabilityOverride,
+  ): boolean | undefined => {
     if (getAPIProvider() === 'firstParty') {
+      return undefined
+    }
+    if (typeof model !== 'string' || model.trim().length === 0) {
       return undefined
     }
     const m = model.toLowerCase()
@@ -46,5 +52,6 @@ export const get3PModelCapabilityOverride = memoize(
     }
     return undefined
   },
-  (model, capability) => `${model.toLowerCase()}:${capability}`,
+  (model, capability) =>
+    `${typeof model === 'string' ? model.toLowerCase() : ''}:${capability}`,
 )

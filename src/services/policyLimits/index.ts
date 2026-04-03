@@ -19,9 +19,9 @@ import { unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 import {
   CLAUDE_AI_INFERENCE_SCOPE,
-  getOauthConfig,
   OAUTH_BETA_HEADER,
 } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import {
   checkAndRefreshOAuthTokenIfNeeded,
   getAnthropicApiKeyWithSource,
@@ -124,7 +124,7 @@ function getCachePath(): string {
  * Get the policy limits API endpoint
  */
 function getPolicyLimitsEndpoint(): string {
-  return `${getOauthConfig().BASE_API_URL}/api/claude_code/policy_limits`
+  return `${getAppBackendBaseUrl()}/api/claude_code/policy_limits`
 }
 
 /**

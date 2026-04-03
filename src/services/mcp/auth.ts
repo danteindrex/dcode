@@ -32,6 +32,7 @@ import { join } from 'path'
 import { parse } from 'url'
 import xss from 'xss'
 import { MCP_CLIENT_METADATA_URL } from '../../constants/oauth.js'
+import { PRODUCT_NAME } from '../../constants/product.js'
 import { openBrowser } from '../../utils/browser.js'
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js'
 import { errorMessage, getErrnoCode } from '../../utils/errors.js'
@@ -1142,7 +1143,7 @@ export async function performMCPOAuthFlow(
           if (code) {
             res.writeHead(200, { 'Content-Type': 'text/html' })
             res.end(
-              `<h1>Authentication Successful</h1><p>You can close this window. Return to Claude Code.</p>`,
+              `<h1>Authentication Successful</h1><p>You can close this window. Return to ${PRODUCT_NAME}.</p>`,
             )
             cleanup()
             resolveOnce(code)
@@ -1416,7 +1417,7 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
 
   get clientMetadata(): OAuthClientMetadata {
     const metadata: OAuthClientMetadata = {
-      client_name: `Claude Code (${this.serverName})`,
+      client_name: `${PRODUCT_NAME} (${this.serverName})`,
       redirect_uris: [this.redirectUri],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],

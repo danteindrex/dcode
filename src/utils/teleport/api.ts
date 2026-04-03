@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { randomUUID } from 'crypto'
-import { getOauthConfig } from 'src/constants/oauth.js'
 import { getOrganizationUUID } from 'src/services/oauth/client.js'
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js'
 import z from 'zod/v4'
 import { getClaudeAIOAuthTokens } from '../auth.js'
 import { logForDebugging } from '../debug.js'
@@ -206,7 +206,7 @@ export async function fetchCodeSessionsFromSessionsAPI(): Promise<
 > {
   const { accessToken, orgUUID } = await prepareApiRequest()
 
-  const url = `${getOauthConfig().BASE_API_URL}/v1/sessions`
+  const url = getTeleportSessionsBaseUrl()
 
   try {
     const headers = {
@@ -281,6 +281,10 @@ export function getOAuthHeaders(accessToken: string): Record<string, string> {
   }
 }
 
+export function getTeleportSessionsBaseUrl(): string {
+  return `${getAppBackendBaseUrl()}/v1/sessions`
+}
+
 /**
  * Fetches a single session by ID from the Sessions API
  * @param sessionId The session ID to fetch
@@ -291,7 +295,7 @@ export async function fetchSession(
 ): Promise<SessionResource> {
   const { accessToken, orgUUID } = await prepareApiRequest()
 
-  const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}`
+  const url = `${getTeleportSessionsBaseUrl()}/${sessionId}`
   const headers = {
     ...getOAuthHeaders(accessToken),
     'anthropic-beta': 'ccr-byoc-2025-07-29',
@@ -366,7 +370,7 @@ export async function sendEventToRemoteSession(
   try {
     const { accessToken, orgUUID } = await prepareApiRequest()
 
-    const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/events`
+    const url = `${getTeleportSessionsBaseUrl()}/${sessionId}/events`
     const headers = {
       ...getOAuthHeaders(accessToken),
       'anthropic-beta': 'ccr-byoc-2025-07-29',
@@ -429,7 +433,7 @@ export async function updateSessionTitle(
   try {
     const { accessToken, orgUUID } = await prepareApiRequest()
 
-    const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}`
+    const url = `${getTeleportSessionsBaseUrl()}/${sessionId}`
     const headers = {
       ...getOAuthHeaders(accessToken),
       'anthropic-beta': 'ccr-byoc-2025-07-29',

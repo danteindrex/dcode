@@ -4,12 +4,12 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from 'src/services/analytics/index.js'
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js'
 import { getOauthAccountInfo, isConsumerSubscriber } from 'src/utils/auth.js'
 import { logForDebugging } from 'src/utils/debug.js'
 import { gracefulShutdown } from 'src/utils/gracefulShutdown.js'
 import { isEssentialTrafficOnly } from 'src/utils/privacyLevel.js'
 import { writeToStderr } from 'src/utils/process.js'
-import { getOauthConfig } from '../../constants/oauth.js'
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js'
 import {
   getAuthHeaders,
@@ -62,7 +62,7 @@ export const getGroveSettings = memoize(
           throw new Error(`Failed to get auth headers: ${authHeaders.error}`)
         }
         return axios.get<AccountSettings>(
-          `${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`,
+          `${getAppBackendBaseUrl()}/api/oauth/account/settings`,
           {
             headers: {
               ...authHeaders.headers,
@@ -95,7 +95,7 @@ export async function markGroveNoticeViewed(): Promise<void> {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`)
       }
       return axios.post(
-        `${getOauthConfig().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
+        `${getAppBackendBaseUrl()}/api/oauth/account/grove_notice_viewed`,
         {},
         {
           headers: {
@@ -127,7 +127,7 @@ export async function updateGroveSettings(
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`)
       }
       return axios.patch(
-        `${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`,
+        `${getAppBackendBaseUrl()}/api/oauth/account/settings`,
         {
           grove_enabled: groveEnabled,
         },
@@ -242,7 +242,7 @@ export const getGroveNoticeConfig = memoize(
           throw new Error(`Failed to get auth headers: ${authHeaders.error}`)
         }
         return axios.get<GroveConfig>(
-          `${getOauthConfig().BASE_API_URL}/api/claude_code_grove`,
+          `${getAppBackendBaseUrl()}/api/claude_code_grove`,
           {
             headers: {
               ...authHeaders.headers,

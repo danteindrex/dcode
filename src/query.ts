@@ -657,6 +657,7 @@ async function* queryLoop(
           let streamingFallbackOccured = false
           queryCheckpoint('query_api_streaming_start')
           for await (const message of deps.callModel({
+            model: currentModel,
             messages: prependUserContext(messagesForQuery, userContext),
             systemPrompt: fullSystemPrompt,
             thinkingConfig: toolUseContext.options.thinkingConfig,

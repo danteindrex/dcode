@@ -3,6 +3,7 @@ import {
   createAdminRequest,
   getMyAdminRequests,
 } from '../../services/api/adminRequests.js'
+import { getUsageSettingsUrl } from '../../constants/product.js'
 import { invalidateOverageCreditGrantCache } from '../../services/api/overageCreditGrant.js'
 import { type ExtraUsage, fetchUtilization } from '../../services/api/usage.js'
 import { getSubscriptionType } from '../../utils/auth.js'
@@ -101,9 +102,7 @@ export async function runExtraUsage(): Promise<ExtraUsageResult> {
     }
   }
 
-  const url = isTeamOrEnterprise
-    ? 'https://claude.ai/admin-settings/usage'
-    : 'https://claude.ai/settings/usage'
+  const url = getUsageSettingsUrl(isTeamOrEnterprise)
 
   try {
     const opened = await openBrowser(url)

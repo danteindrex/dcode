@@ -42,8 +42,17 @@ import zipObject from 'lodash-es/zipObject.js'
 import pMap from 'p-map'
 import { getOriginalCwd, getSessionId } from '../../bootstrap/state.js'
 import type { Command } from '../../commands.js'
-import { getOauthConfig } from '../../constants/oauth.js'
-import { PRODUCT_URL } from '../../constants/product.js'
+import {
+  PRODUCT_DESCRIPTION,
+  PRODUCT_NAME,
+  PRODUCT_URL,
+  getWebAppHostLabel,
+  getWebAppProxyLabel,
+} from '../../constants/product.js'
+import {
+  getMcpProxyBaseUrl,
+  getMcpProxyPath,
+} from '../backend/targets.js'
 import type { AppState } from '../../state/AppState.js'
 import {
   type Tool,
@@ -350,7 +359,7 @@ function handleRemoteAuthFailure(
   const label: Record<typeof transportType, string> = {
     sse: 'SSE',
     http: 'HTTP',
-    'claudeai-proxy': 'claude.ai proxy',
+    'claudeai-proxy': getWebAppProxyLabel(),
   }
   logMCPDebug(
     name,
@@ -375,7 +384,7 @@ export function createClaudeAiProxyFetch(innerFetch: FetchLike): FetchLike {
       await checkAndRefreshOAuthTokenIfNeeded()
       const currentTokens = getClaudeAIOAuthTokens()
       if (!currentTokens) {
-        throw new Error('No claude.ai OAuth token available')
+        throw new Error(`No ${getWebAppHostLabel()} OAuth token available`)
       }
       // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
       const headers = new Headers(init?.headers)
@@ -868,18 +877,17 @@ export const connectToServer = memoize(
       } else if (serverRef.type === 'claudeai-proxy') {
         logMCPDebug(
           name,
-          `Initializing claude.ai proxy transport for server ${serverRef.id}`,
+          `Initializing ${getWebAppProxyLabel()} transport for server ${serverRef.id}`,
         )
 
         const tokens = getClaudeAIOAuthTokens()
         if (!tokens) {
-          throw new Error('No claude.ai OAuth token found')
+          throw new Error(`No ${getWebAppHostLabel()} OAuth token found`)
         }
 
-        const oauthConfig = getOauthConfig()
-        const proxyUrl = `${oauthConfig.MCP_PROXY_URL}${oauthConfig.MCP_PROXY_PATH.replace('{server_id}', serverRef.id)}`
+        const proxyUrl = `${getMcpProxyBaseUrl()}${getMcpProxyPath().replace('{server_id}', serverRef.id)}`
 
-        logMCPDebug(name, `Using claude.ai proxy at ${proxyUrl}`)
+        logMCPDebug(name, `Using ${getWebAppProxyLabel()} at ${proxyUrl}`)
 
         // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
         const fetchWithAuth = createClaudeAiProxyFetch(globalThis.fetch)
@@ -901,7 +909,7 @@ export const connectToServer = memoize(
           new URL(proxyUrl),
           transportOptions,
         )
-        logMCPDebug(name, `claude.ai proxy transport created successfully`)
+        logMCPDebug(name, `${getWebAppProxyLabel()} transport created successfully`)
       } else if (
         (serverRef.type === 'stdio' || !serverRef.type) &&
         isClaudeInChromeMCPServer(name)
@@ -985,9 +993,9 @@ export const connectToServer = memoize(
       const client = new Client(
         {
           name: 'claude-code',
-          title: 'Claude Code',
+          title: PRODUCT_NAME,
           version: MACRO.VERSION ?? 'unknown',
-          description: "Anthropic's agentic coding tool",
+          description: PRODUCT_DESCRIPTION,
           websiteUrl: PRODUCT_URL,
         },
         {
@@ -1127,7 +1135,7 @@ export const connectToServer = memoize(
         ) {
           logMCPDebug(
             name,
-            `claude.ai proxy connection failed after ${elapsed}ms: ${error.message}`,
+            `${getWebAppProxyLabel()} connection failed after ${elapsed}ms: ${error.message}`,
           )
           logMCPError(name, error)
 
@@ -3280,9 +3288,9 @@ export async function setupSdkMcpClients(
       const client = new Client(
         {
           name: 'claude-code',
-          title: 'Claude Code',
+          title: PRODUCT_NAME,
           version: MACRO.VERSION ?? 'unknown',
-          description: "Anthropic's agentic coding tool",
+          description: PRODUCT_DESCRIPTION,
           websiteUrl: PRODUCT_URL,
         },
         {

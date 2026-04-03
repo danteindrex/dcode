@@ -158,6 +158,9 @@ export function modelSupportsStructuredOutputs(model: string): boolean {
 
 // @[MODEL LAUNCH]: Add the new model if it supports auto mode (specifically PI probes) — ask in #proj-claude-code-safety-research.
 export function modelSupportsAutoMode(model: string): boolean {
+  if (typeof model !== 'string' || model.trim().length === 0) {
+    return false
+  }
   if (feature('TRANSCRIPT_CLASSIFIER')) {
     const m = getCanonicalName(model)
     // External: firstParty-only at launch (PI probes not wired for

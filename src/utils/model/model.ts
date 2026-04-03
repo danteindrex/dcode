@@ -19,6 +19,7 @@ import {
   modelSupports1M,
 } from '../context.js'
 import { isEnvTruthy } from '../envUtils.js'
+import { hasStoredOpenAICodexOAuth } from '../../providers/openai-codex/storage.js'
 import { getModelStrings, resolveOverriddenModel } from './modelStrings.js'
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
@@ -32,6 +33,10 @@ import { capitalize } from '../stringUtils.js'
 export type ModelShortName = string
 export type ModelName = string
 export type ModelSetting = ModelName | ModelAlias | null
+
+const DEFAULT_OPENAI_CODEX_MODEL = 'openai-codex/gpt-5'
+const DEFAULT_OPENAI_MODEL = 'openai/gpt-5.4'
+const DEFAULT_GEMINI_MODEL = 'gemini/gemini-2.5-pro'
 
 export function getSmallFastModel(): ModelName {
   return process.env.ANTHROPIC_SMALL_FAST_MODEL || getDefaultHaikuModel()
@@ -94,7 +99,7 @@ export function getMainLoopModel(): ModelName {
   if (model !== undefined && model !== null) {
     return parseUserSpecifiedModel(model)
   }
-  return getDefaultMainLoopModel()
+  return parseUserSpecifiedModel(getDynamicDefaultMainLoopModelSetting())
 }
 
 export function getBestModel(): ModelName {
@@ -199,12 +204,41 @@ export function getDefaultMainLoopModelSetting(): ModelName | ModelAlias {
   return getDefaultSonnetModel()
 }
 
+export function getDynamicDefaultMainLoopModelSetting(): ModelName | ModelAlias {
+  const userSpecified = getUserSpecifiedModelSetting()
+  if (userSpecified !== undefined && userSpecified !== null) {
+    return userSpecified
+  }
+
+  if (
+    hasStoredOpenAICodexOAuth() ||
+    !!process.env.OPENAI_CODEX_ACCESS_TOKEN ||
+    !!process.env.OPENAI_CODEX_REFRESH_TOKEN
+  ) {
+    return DEFAULT_OPENAI_CODEX_MODEL
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return DEFAULT_OPENAI_MODEL
+  }
+
+  if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+    return DEFAULT_GEMINI_MODEL
+  }
+
+  if (process.env.OLLAMA_MODEL?.trim()) {
+    return `ollama/${process.env.OLLAMA_MODEL.trim()}`
+  }
+
+  return getDefaultMainLoopModelSetting()
+}
+
 /**
  * Synchronous operation to get the default main loop model to use
  * (bypassing any user-specified values).
  */
 export function getDefaultMainLoopModel(): ModelName {
-  return parseUserSpecifiedModel(getDefaultMainLoopModelSetting())
+  return parseUserSpecifiedModel(getDynamicDefaultMainLoopModelSetting())
 }
 
 // @[MODEL LAUNCH]: Add a canonical name mapping for the new model below.
@@ -214,7 +248,13 @@ export function getDefaultMainLoopModel(): ModelName {
  * 'us.anthropic.claude-opus-4-6-v1:0'). Does not touch settings, so safe at
  * module top-level (see MODEL_COSTS in modelCost.ts).
  */
-export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
+export function firstPartyNameToCanonical(
+  name: ModelName | null | undefined,
+): ModelShortName {
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return getDefaultMainLoopModel()
+  }
+
   name = name.toLowerCase()
   // Special cases for Claude 4+ models to differentiate versions
   // Order matters: check more specific versions first (4-5 before 4)
@@ -443,8 +483,12 @@ export function getPublicModelName(model: ModelName): string {
  * @param modelInput The model alias or name provided by the user.
  */
 export function parseUserSpecifiedModel(
-  modelInput: ModelName | ModelAlias,
+  modelInput: ModelName | ModelAlias | null | undefined,
 ): ModelName {
+  if (typeof modelInput !== 'string' || modelInput.trim().length === 0) {
+    return parseUserSpecifiedModel(getDefaultMainLoopModelSetting())
+  }
+
   const modelInputTrimmed = modelInput.trim()
   const normalizedModel = modelInputTrimmed.toLowerCase()
 
@@ -613,6 +657,11 @@ export function getMarketingNameForModel(modelId: string): string | undefined {
   return undefined
 }
 
-export function normalizeModelStringForAPI(model: string): string {
+export function normalizeModelStringForAPI(
+  model: string | null | undefined,
+): string {
+  if (typeof model !== 'string' || model.trim().length === 0) {
+    return getDefaultMainLoopModel()
+  }
   return model.replace(/\[(1|2)m\]/gi, '')
 }

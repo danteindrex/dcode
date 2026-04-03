@@ -5,10 +5,10 @@ import React from 'react';
 import { getOriginalCwd, getSessionId } from 'src/bootstrap/state.js';
 import { checkGate_CACHED_OR_BLOCKING } from 'src/services/analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from 'src/services/analytics/index.js';
+import { getAppBackendBaseUrl, getWebAppOrigin } from 'src/services/backend/targets.js';
 import { isPolicyAllowed } from 'src/services/policyLimits/index.js';
 import { z } from 'zod/v4';
 import { getTeleportErrors, TeleportError, type TeleportLocalErrorType } from '../components/TeleportError.js';
-import { getOauthConfig } from '../constants/oauth.js';
 import type { SDKMessage } from '../entrypoints/agentSdkTypes.js';
 import type { Root } from '../ink.js';
 import { KeybindingSetup } from '../keybindings/KeybindingProviderSetup.js';
@@ -646,7 +646,7 @@ export async function pollRemoteSessionEvents(sessionId: string, afterId: string
     'anthropic-beta': 'ccr-byoc-2025-07-29',
     'x-organization-uuid': orgUUID
   };
-  const eventsUrl = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/events`;
+  const eventsUrl = `${getAppBackendBaseUrl()}/v1/sessions/${sessionId}/events`;
   type EventsResponse = {
     data: unknown[];
     has_more: boolean;
@@ -819,7 +819,7 @@ export async function teleportToRemote(options: {
     // (bughunter.go:520 sets a git source too; env-manager does the checkout
     // before the SessionStart hook fires).
     if (options.environmentId) {
-      const url = `${getOauthConfig().BASE_API_URL}/v1/sessions`;
+      const url = `${getAppBackendBaseUrl()}/v1/sessions`;
       const headers = {
         ...getOAuthHeaders(accessToken),
         'anthropic-beta': 'ccr-byoc-2025-07-29',
@@ -839,7 +839,7 @@ export async function teleportToRemote(options: {
         const bundle = await createAndUploadGitBundle({
           oauthToken: accessToken,
           sessionId: getSessionId(),
-          baseUrl: getOauthConfig().BASE_API_URL
+          baseUrl: getAppBackendBaseUrl()
         }, {
           signal
         });
@@ -1003,14 +1003,14 @@ export async function teleportToRemote(options: {
       const bundle = await createAndUploadGitBundle({
         oauthToken: accessToken,
         sessionId: getSessionId(),
-        baseUrl: getOauthConfig().BASE_API_URL
+        baseUrl: getAppBackendBaseUrl()
       }, {
         signal
       });
       if (!bundle.success) {
         logError(new Error(`Bundle upload failed: ${bundle.error}`));
         // Only steer users to GitHub setup when there's a remote to clone from.
-        const setup = repoInfo ? '. Please setup GitHub on https://claude.ai/code' : '';
+        const setup = repoInfo ? `. Please setup GitHub on ${getWebAppOrigin()}/code` : '';
         let msg: string;
         switch (bundle.failReason) {
           case 'empty_repo':
@@ -1093,7 +1093,7 @@ export async function teleportToRemote(options: {
     logForDebugging(`Selected environment: ${environmentId} (${selectedEnvironment.name}, ${selectedEnvironment.kind})`);
 
     // Prepare API request for Sessions API
-    const url = `${getOauthConfig().BASE_API_URL}/v1/sessions`;
+    const url = `${getAppBackendBaseUrl()}/v1/sessions`;
     const headers = {
       ...getOAuthHeaders(accessToken),
       'anthropic-beta': 'ccr-byoc-2025-07-29',
@@ -1207,7 +1207,7 @@ export async function archiveRemoteSession(sessionId: string): Promise<void> {
     'anthropic-beta': 'ccr-byoc-2025-07-29',
     'x-organization-uuid': orgUUID
   };
-  const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/archive`;
+  const url = `${getAppBackendBaseUrl()}/v1/sessions/${sessionId}/archive`;
   try {
     const resp = await axios.post(url, {}, {
       headers,

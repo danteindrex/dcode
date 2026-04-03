@@ -36,6 +36,9 @@ export function has1mContext(model: string): boolean {
   if (is1mContextDisabled()) {
     return false
   }
+  if (typeof model !== 'string') {
+    return false
+  }
   return /\[1m\]/i.test(model)
 }
 
@@ -150,11 +153,12 @@ export function getModelMaxOutputTokens(model: string): {
   default: number
   upperLimit: number
 } {
+  const modelValue = typeof model === 'string' ? model : ''
   let defaultTokens: number
   let upperLimit: number
 
   if (process.env.USER_TYPE === 'ant') {
-    const antModel = resolveAntModel(model.toLowerCase())
+    const antModel = resolveAntModel(modelValue.toLowerCase())
     if (antModel) {
       defaultTokens = antModel.defaultMaxTokens ?? MAX_OUTPUT_TOKENS_DEFAULT
       upperLimit = antModel.upperMaxTokensLimit ?? MAX_OUTPUT_TOKENS_UPPER_LIMIT
@@ -162,7 +166,7 @@ export function getModelMaxOutputTokens(model: string): {
     }
   }
 
-  const m = getCanonicalName(model)
+  const m = getCanonicalName(modelValue)
 
   if (m.includes('opus-4-6')) {
     defaultTokens = 64_000
@@ -200,7 +204,7 @@ export function getModelMaxOutputTokens(model: string): {
     upperLimit = MAX_OUTPUT_TOKENS_UPPER_LIMIT
   }
 
-  const cap = getModelCapability(model)
+  const cap = getModelCapability(modelValue)
   if (cap?.max_tokens && cap.max_tokens >= 4_096) {
     upperLimit = cap.max_tokens
     defaultTokens = Math.min(defaultTokens, upperLimit)

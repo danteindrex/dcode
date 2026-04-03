@@ -11,6 +11,7 @@ import axios from 'axios'
 import { randomUUID } from 'crypto'
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import { count } from '../../utils/array.js'
 import { getCwd } from '../../utils/cwd.js'
 import { logForDebugging } from '../../utils/debug.js'
@@ -33,7 +34,7 @@ function getDefaultApiBaseUrl(): string {
   return (
     process.env.ANTHROPIC_BASE_URL ||
     process.env.CLAUDE_CODE_API_BASE_URL ||
-    'https://api.anthropic.com'
+    getAppBackendBaseUrl()
   )
 }
 

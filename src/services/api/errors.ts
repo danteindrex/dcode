@@ -8,6 +8,7 @@ import type {
   BetaStopReason,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
 import { AFK_MODE_BETA_HEADER } from 'src/constants/betas.js'
+import { getUsageSettingsUrl } from 'src/constants/product.js'
 import type { SDKAssistantMessageError } from 'src/entrypoints/agentSdkTypes.js'
 import type {
   AssistantMessage,
@@ -539,7 +540,7 @@ export function getAssistantMessageFromError(
     // (e.g. 1M context without Extra Usage) and infra capacity 429s land here.
     if (error.message.includes('Extra usage is required for long context')) {
       const hint = getIsNonInteractiveSession()
-        ? 'enable extra usage at claude.ai/settings/usage, or use --model to switch to standard context'
+        ? `enable extra usage at ${getUsageSettingsUrl()}, or use --model to switch to standard context`
         : 'run /extra-usage to enable, or /model to switch to standard context'
       return createAssistantAPIErrorMessage({
         content: `${API_ERROR_MESSAGE_PREFIX}: Extra usage is required for 1M context · ${hint}`,
@@ -942,6 +943,9 @@ function get3PModelFallbackSuggestion(model: string): string | undefined {
     return undefined
   }
   // @[MODEL LAUNCH]: Add a fallback suggestion chain for the new model → previous version for 3P
+  if (typeof model !== 'string' || model.trim().length === 0) {
+    return undefined
+  }
   const m = model.toLowerCase()
   // If the failing model looks like an Opus 4.6 variant, suggest the default Opus (4.1 for 3P)
   if (m.includes('opus-4-6') || m.includes('opus_4_6')) {

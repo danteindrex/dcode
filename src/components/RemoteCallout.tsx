@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import { getWebAppOrigin } from '../services/backend/targets.js';
 import { isBridgeEnabled } from '../bridge/bridgeEnabled.js';
 import { Box, Text } from '../ink.js';
 import { getClaudeAIOAuthTokens } from '../utils/auth.js';
@@ -46,7 +47,7 @@ export function RemoteCallout({
         <Box marginBottom={1} flexDirection="column">
           <Text>
             Remote Control lets you access this CLI session from the web
-            (claude.ai/code) or the Claude app, so you can pick up where you
+            ({getWebAppOrigin()}/code) or the Claude app, so you can pick up where you
             left off on any device.
           </Text>
           <Text> </Text>

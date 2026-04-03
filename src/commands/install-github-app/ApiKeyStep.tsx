@@ -1,5 +1,6 @@
 import { c as _c } from "react/compiler-runtime";
 import React, { useCallback, useState } from 'react';
+import { getConsoleApiKeysUrl } from '../../constants/product.js';
 import TextInput from '../../components/TextInput.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, color, Text, useTheme } from '../../ink.js';
@@ -152,7 +153,7 @@ export function ApiKeyStep(t0) {
   }
   let t11;
   if ($[27] !== existingApiKey || $[28] !== selectedOption || $[29] !== theme) {
-    t11 = existingApiKey && <Box marginBottom={1}><Text>{selectedOption === "existing" ? color("success", theme)("> ") : "  "}Use your existing Claude Code API key</Text></Box>;
+    t11 = existingApiKey && <Box marginBottom={1}><Text>{selectedOption === "existing" ? color("success", theme)("> ") : "  "}Use your existing API key</Text></Box>;
     $[27] = existingApiKey;
     $[28] = selectedOption;
     $[29] = theme;
@@ -162,7 +163,7 @@ export function ApiKeyStep(t0) {
   }
   let t12;
   if ($[31] !== onCreateOAuthToken || $[32] !== selectedOption || $[33] !== theme) {
-    t12 = onCreateOAuthToken && <Box marginBottom={1}><Text>{selectedOption === "oauth" ? color("success", theme)("> ") : "  "}Create a long-lived token with your Claude subscription</Text></Box>;
+    t12 = onCreateOAuthToken && <Box marginBottom={1}><Text>{selectedOption === "oauth" ? color("success", theme)("> ") : "  "}Create a long-lived token from your web account</Text></Box>;
     $[31] = onCreateOAuthToken;
     $[32] = selectedOption;
     $[33] = theme;
@@ -189,7 +190,7 @@ export function ApiKeyStep(t0) {
   }
   let t15;
   if ($[40] !== apiKeyOrOAuthToken || $[41] !== cursorOffset || $[42] !== onApiKeyChange || $[43] !== onSubmit || $[44] !== selectedOption || $[45] !== terminalSize) {
-    t15 = selectedOption === "new" && <TextInput value={apiKeyOrOAuthToken} onChange={onApiKeyChange} onSubmit={onSubmit} onPaste={onApiKeyChange} focus={true} placeholder={"sk-ant\u2026 (Create a new key at https://platform.claude.com/settings/keys)"} mask="*" columns={terminalSize.columns} cursorOffset={cursorOffset} onChangeCursorOffset={setCursorOffset} showCursor={true} />;
+    t15 = selectedOption === "new" && <TextInput value={apiKeyOrOAuthToken} onChange={onApiKeyChange} onSubmit={onSubmit} onPaste={onApiKeyChange} focus={true} placeholder={`sk-ant\u2026 (Create a new key at ${getConsoleApiKeysUrl()})`} mask="*" columns={terminalSize.columns} cursorOffset={cursorOffset} onChangeCursorOffset={setCursorOffset} showCursor={true} />;
     $[40] = apiKeyOrOAuthToken;
     $[41] = cursorOffset;
     $[42] = onApiKeyChange;

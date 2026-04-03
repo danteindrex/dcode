@@ -2,6 +2,7 @@ import { readdirSync } from 'fs'
 import { stat } from 'fs/promises'
 import { homedir, platform, tmpdir, userInfo } from 'os'
 import { join } from 'path'
+import { CLAUDE_AI_BASE_URL } from '../../constants/product.js'
 import { normalizeNameForMCP } from '../../services/mcp/normalization.js'
 import { logForDebugging } from '../debug.js'
 import { isFsInaccessible } from '../errors.js'
@@ -10,6 +11,40 @@ import { getPlatform } from '../platform.js'
 import { which } from '../which.js'
 
 export const CLAUDE_IN_CHROME_MCP_SERVER_NAME = 'claude-in-chrome'
+export const CLAUDE_IN_CHROME_PRODUCT_NAME = 'Claude in Chrome'
+export const CLAUDE_IN_CHROME_BETA_TITLE = `${CLAUDE_IN_CHROME_PRODUCT_NAME} (Beta)`
+export const CLAUDE_IN_CHROME_DOCS_URL =
+  'https://code.claude.com/docs/en/chrome'
+export const CLAUDE_IN_CHROME_BUG_REPORT_URL =
+  'https://github.com/anthropics/claude-code/issues/new?labels=bug,claude-in-chrome'
+export const CLAUDE_IN_CHROME_NATIVE_HOST_DESCRIPTION =
+  'Claude Code Browser Extension Native Host'
+export const CLAUDE_AI_HOSTNAME = new URL(CLAUDE_AI_BASE_URL).hostname
+export const CLAUDE_IN_CHROME_NATIVE_HOST_IDENTIFIER =
+  'com.anthropic.claude_code_browser_extension'
+
+const CLAUDE_IN_CHROME_PROD_EXTENSION_ID =
+  'fcoeoabgfenejglbffodgkkbkcdhcgfn'
+const CLAUDE_IN_CHROME_DEV_EXTENSION_ID =
+  'dihbgbndebgnbjfmelmegjepbnkhlgni'
+const CLAUDE_IN_CHROME_ANT_EXTENSION_ID =
+  'dngcpimnedloihjnnfngkgjoidhnaolf'
+
+export function getClaudeInChromeExtensionIds(): string[] {
+  return process.env.USER_TYPE === 'ant'
+    ? [
+        CLAUDE_IN_CHROME_PROD_EXTENSION_ID,
+        CLAUDE_IN_CHROME_DEV_EXTENSION_ID,
+        CLAUDE_IN_CHROME_ANT_EXTENSION_ID,
+      ]
+    : [CLAUDE_IN_CHROME_PROD_EXTENSION_ID]
+}
+
+export function getClaudeInChromeExtensionOrigins(): string[] {
+  return getClaudeInChromeExtensionIds().map(
+    id => `chrome-extension://${id}/`,
+  )
+}
 
 // Re-export ChromiumBrowser type for setup.ts
 export type { ChromiumBrowser } from './setupPortable.js'

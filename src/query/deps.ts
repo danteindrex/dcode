@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { queryModelWithStreaming } from '../services/api/claude.js'
+import { defaultProviderRuntime } from '../providers/runtime.js'
 import { autoCompactIfNeeded } from '../services/compact/autoCompact.js'
 import { microcompactMessages } from '../services/compact/microCompact.js'
 
@@ -20,7 +20,7 @@ import { microcompactMessages } from '../services/compact/microCompact.js'
 // PRs can add runTools, handleStopHooks, logEvent, queue ops, etc.
 export type QueryDeps = {
   // -- model
-  callModel: typeof queryModelWithStreaming
+  callModel: typeof defaultProviderRuntime.callModel
 
   // -- compaction
   microcompact: typeof microcompactMessages
@@ -32,7 +32,7 @@ export type QueryDeps = {
 
 export function productionDeps(): QueryDeps {
   return {
-    callModel: queryModelWithStreaming,
+    callModel: defaultProviderRuntime.callModel,
     microcompact: microcompactMessages,
     autocompact: autoCompactIfNeeded,
     uuid: randomUUID,

@@ -17,9 +17,9 @@ import { dirname } from 'path'
 import { getIsInteractive } from '../../bootstrap/state.js'
 import {
   CLAUDE_AI_INFERENCE_SCOPE,
-  getOauthConfig,
   OAUTH_BETA_HEADER,
 } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import {
   checkAndRefreshOAuthTokenIfNeeded,
   getClaudeAIOAuthTokens,
@@ -221,7 +221,7 @@ function isUsingOAuth(): boolean {
 }
 
 function getSettingsSyncEndpoint(): string {
-  return `${getOauthConfig().BASE_API_URL}/api/claude_code/user_settings`
+  return `${getAppBackendBaseUrl()}/api/claude_code/user_settings`
 }
 
 function getSettingsSyncAuthHeaders(): {

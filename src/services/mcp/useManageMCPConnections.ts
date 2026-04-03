@@ -59,6 +59,7 @@ import {
   useAppStateStore,
   useSetAppState,
 } from '../../state/AppState.js'
+import { getWebAppAuthLabel, getWebAppHostLabel } from '../../constants/product.js'
 import { errorMessage } from '../../utils/errors.js'
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { logMCPDebug, logMCPError } from '../../utils/log.js'
@@ -597,7 +598,7 @@ export function useManageMCPConnections(
                     gate.kind === 'disabled'
                       ? 'Channels are not currently available'
                       : gate.kind === 'auth'
-                        ? 'Channels require claude.ai authentication · run /login'
+                        ? `Channels require ${getWebAppAuthLabel()} · run /login`
                         : gate.kind === 'policy'
                           ? 'Channels are not enabled for your org · have an administrator set channelsEnabled: true in managed settings'
                           : gate.reason
@@ -957,7 +958,7 @@ export function useManageMCPConnections(
           ).catch(error => {
             logMCPError(
               'useManageMcpConnections',
-              `Failed to get claude.ai MCP resources: ${errorMessage(error)}`,
+              `Failed to get ${getWebAppHostLabel()} MCP resources: ${errorMessage(error)}`,
             )
           })
         }

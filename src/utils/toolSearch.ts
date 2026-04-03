@@ -237,6 +237,9 @@ function getUnsupportedToolReferencePatterns(): string[] {
  * @returns true if the model supports tool_reference, false otherwise
  */
 export function modelSupportsToolReference(model: string): boolean {
+  if (typeof model !== 'string' || model.trim().length === 0) {
+    return false
+  }
   const normalizedModel = model.toLowerCase()
   const unsupportedPatterns = getUnsupportedToolReferencePatterns()
 

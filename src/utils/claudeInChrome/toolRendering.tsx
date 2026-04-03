@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { MessageResponse } from '../../components/MessageResponse.js';
+import { getChromeFocusTabUrl } from '../../constants/product.js';
 import { supportsHyperlinks } from '../../ink/supports-hyperlinks.js';
 import { Link, Text } from '../../ink.js';
 import { renderToolResultMessage as renderDefaultMCPToolResultMessage } from '../../tools/MCPTool/UI.js';
@@ -13,7 +14,6 @@ export type { Tool } from '@modelcontextprotocol/sdk/types.js';
  * Keep in sync with the package's BROWSER_TOOLS array.
  */
 export type ChromeToolName = 'javascript_tool' | 'read_page' | 'find' | 'form_input' | 'computer' | 'navigate' | 'resize_window' | 'gif_creator' | 'upload_image' | 'get_page_text' | 'tabs_context_mcp' | 'tabs_create_mcp' | 'update_plan' | 'read_console_messages' | 'read_network_requests' | 'shortcuts_list' | 'shortcuts_execute';
-const CHROME_EXTENSION_FOCUS_TAB_URL_BASE = 'https://clau.de/chrome/tab/';
 function renderChromeToolUseMessage(input: Record<string, unknown>, toolName: ChromeToolName, verbose: boolean): React.ReactNode {
   const tabId = input.tabId;
   if (typeof tabId === 'number') {
@@ -132,7 +132,7 @@ function renderChromeViewTabLink(input: unknown): React.ReactNode {
   if (isNaN(tabId)) {
     return null;
   }
-  const linkUrl = `${CHROME_EXTENSION_FOCUS_TAB_URL_BASE}${tabId}`;
+  const linkUrl = getChromeFocusTabUrl(String(tabId));
   return <Text>
       {' '}
       <Link url={linkUrl}>

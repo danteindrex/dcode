@@ -141,6 +141,7 @@ import { gracefulShutdownSync } from '../utils/gracefulShutdown.js';
 import { handlePromptSubmit, type PromptInputHelpers } from '../utils/handlePromptSubmit.js';
 import { useQueueProcessor } from '../hooks/useQueueProcessor.js';
 import { useMailboxBridge } from '../hooks/useMailboxBridge.js';
+import { useControlPlaneBridge } from '../hooks/useControlPlaneBridge.js';
 import { queryCheckpoint, logQueryProfileReport } from '../utils/queryProfiler.js';
 import type { Message as MessageType, UserMessage, ProgressMessage, HookResultMessage, PartialCompactDirection } from '../types/message.js';
 import { query } from '../query.js';
@@ -1342,7 +1343,8 @@ export function REPL({
   // batches them into a single render, eliminating the extra render that
   // the previous useEffect → setState pattern caused.
   const setInputValue = useCallback((value: string) => {
-    if (trySuggestBgPRIntercept(inputValueRef.current, value)) return;
+    const nextValue = typeof value === 'string' ? value : '';
+    if (trySuggestBgPRIntercept(inputValueRef.current, nextValue)) return;
     // In fullscreen mode, typing into an empty prompt re-pins scroll to
     // bottom. Only fires on empty→non-empty so scrolling up to reference
     // something while composing a message doesn't yank the view back on
@@ -1351,15 +1353,15 @@ export function REPL({
     // Skipped if the user scrolled within the last 3s — they're actively
     // reading, not lost. lastUserScrollTsRef starts at 0 so the first-
     // ever keypress (no scroll yet) always repins.
-    if (inputValueRef.current === '' && value !== '' && Date.now() - lastUserScrollTsRef.current >= RECENT_SCROLL_REPIN_WINDOW_MS) {
+    if (inputValueRef.current === '' && nextValue !== '' && Date.now() - lastUserScrollTsRef.current >= RECENT_SCROLL_REPIN_WINDOW_MS) {
       repinScroll();
     }
     // Sync ref immediately (like setMessages) so callers that read
     // inputValueRef before React commits — e.g. the auto-restore finally
     // block's `=== ''` guard — see the fresh value, not the stale render.
-    inputValueRef.current = value;
-    setInputValueRaw(value);
-    setIsPromptInputActive(value.trim().length > 0);
+    inputValueRef.current = nextValue;
+    setInputValueRaw(nextValue);
+    setIsPromptInputActive(nextValue.trim().length > 0);
   }, [setIsPromptInputActive, repinScroll, trySuggestBgPRIntercept]);
 
   // Schedule a timeout to stop suppressing dialogs after the user stops typing.
@@ -1993,7 +1995,8 @@ export function REPL({
   }, []);
   const {
     status: apiKeyStatus,
-    reverify
+    reverify,
+    message: authStatusMessage
   } = useApiKeyVerification();
 
   // Auto-run /issue state
@@ -4041,6 +4044,10 @@ export function REPL({
     isLoading,
     onSubmitMessage: handleIncomingPrompt
   });
+  useControlPlaneBridge({
+    isLoading,
+    onSubmitMessage: handleIncomingPrompt
+  });
 
   // Scheduled tasks from .claude/scheduled_tasks.json (CronCreate/Delete/List)
   if (feature('AGENT_TRIGGERS')) {
@@ -4900,7 +4907,7 @@ export function REPL({
                       {"external" === 'ant' && skillImprovementSurvey.suggestion && <SkillImprovementSurvey isOpen={skillImprovementSurvey.isOpen} skillName={skillImprovementSurvey.suggestion.skillName} updates={skillImprovementSurvey.suggestion.updates} handleSelect={skillImprovementSurvey.handleSelect} inputValue={inputValue} setInputValue={setInputValue} />}
                       {showIssueFlagBanner && <IssueFlagBanner />}
                       {}
-                      <PromptInput debug={debug} ideSelection={ideSelection} hasSuppressedDialogs={!!hasSuppressedDialogs} isLocalJSXCommandActive={isShowingLocalJSXCommand} getToolUseContext={getToolUseContext} toolPermissionContext={toolPermissionContext} setToolPermissionContext={setToolPermissionContext} apiKeyStatus={apiKeyStatus} commands={commands} agents={agentDefinitions.activeAgents} isLoading={isLoading} onExit={handleExit} verbose={verbose} messages={messages} onAutoUpdaterResult={setAutoUpdaterResult} autoUpdaterResult={autoUpdaterResult} input={inputValue} onInputChange={setInputValue} mode={inputMode} onModeChange={setInputMode} stashedPrompt={stashedPrompt} setStashedPrompt={setStashedPrompt} submitCount={submitCount} onShowMessageSelector={handleShowMessageSelector} onMessageActionsEnter={
+                      <PromptInput debug={debug} ideSelection={ideSelection} hasSuppressedDialogs={!!hasSuppressedDialogs} isLocalJSXCommandActive={isShowingLocalJSXCommand} getToolUseContext={getToolUseContext} toolPermissionContext={toolPermissionContext} setToolPermissionContext={setToolPermissionContext} apiKeyStatus={apiKeyStatus} authStatusMessage={authStatusMessage} commands={commands} agents={agentDefinitions.activeAgents} isLoading={isLoading} onExit={handleExit} verbose={verbose} messages={messages} onAutoUpdaterResult={setAutoUpdaterResult} autoUpdaterResult={autoUpdaterResult} input={inputValue} onInputChange={setInputValue} mode={inputMode} onModeChange={setInputMode} stashedPrompt={stashedPrompt} setStashedPrompt={setStashedPrompt} submitCount={submitCount} onShowMessageSelector={handleShowMessageSelector} onMessageActionsEnter={
             // Works during isLoading — edit cancels first; uuid selection survives appends.
             feature('MESSAGE_ACTIONS') && isFullscreenEnvEnabled() && !disableMessageActions ? enterMessageActions : undefined} mcpClients={mcpClients} pastedContents={pastedContents} setPastedContents={setPastedContents} vimMode={vimMode} setVimMode={setVimMode} showBashesDialog={showBashesDialog} setShowBashesDialog={setShowBashesDialog} onSubmit={onSubmit} onAgentSubmit={onAgentSubmit} isSearchingHistory={isSearchingHistory} setIsSearchingHistory={setIsSearchingHistory} helpOpen={isHelpOpen} setHelpOpen={setIsHelpOpen} insertTextRef={feature('VOICE_MODE') ? insertTextRef : undefined} voiceInterimRange={voice.interimRange} />
                       <SessionBackgroundHint onBackgroundSession={handleBackgroundSession} isLoading={isLoading} />

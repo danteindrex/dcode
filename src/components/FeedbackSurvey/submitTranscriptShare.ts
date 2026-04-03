@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { readFile, stat } from 'fs/promises'
+import { getAppBackendBaseUrl } from '../../services/backend/targets.js'
 import type { Message } from '../../types/message.js'
 import { checkAndRefreshOAuthTokenIfNeeded } from '../../utils/auth.js'
 import { logForDebugging } from '../../utils/debug.js'
@@ -85,7 +86,7 @@ export async function submitTranscriptShare(
     }
 
     const response = await axios.post(
-      'https://api.anthropic.com/api/claude_code_shared_session_transcripts',
+      `${getAppBackendBaseUrl()}/api/claude_code_shared_session_transcripts`,
       { content, appearance_id: appearanceId },
       {
         headers,

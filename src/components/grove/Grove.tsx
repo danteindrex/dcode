@@ -1,6 +1,7 @@
 import { c as _c } from "react/compiler-runtime";
 import React, { useEffect, useState } from 'react';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from 'src/services/analytics/index.js';
+import { getPrivacySettingsUrl } from '../../constants/product.js';
 import { Box, Link, Text, useInput } from '../../ink.js';
 import { type AccountSettings, calculateShouldShowGrove, type GroveConfig, getGroveNoticeConfig, getGroveSettings, markGroveNoticeViewed, updateGroveSettings } from '../../services/api/grove.js';
 import { Select } from '../CustomSelect/index.js';
@@ -53,7 +54,7 @@ function GracePeriodContentBody() {
   }
   let t4;
   if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
-    t4 = <Box paddingLeft={1}><Text>{t2}{t3}<Text>— Allow the use of your chats and coding sessions to train and improve Anthropic AI models. Change anytime in your Privacy Settings (<Link url="https://claude.ai/settings/data-privacy-controls" />).</Text></Text></Box>;
+    t4 = <Box paddingLeft={1}><Text>{t2}{t3}<Text>— Allow the use of your chats and coding sessions to train and improve Anthropic AI models. Change anytime in your Privacy Settings (<Link url={getPrivacySettingsUrl()} />).</Text></Text></Box>;
     $[4] = t4;
   } else {
     t4 = $[4];
@@ -106,7 +107,7 @@ function PostGracePeriodContentBody() {
   }
   let t2;
   if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-    t2 = <Box flexDirection="column"><Text bold={true}>Help improve Claude</Text><Text>Allow the use of your chats and coding sessions to train and improve Anthropic AI models. You can change this anytime in Privacy Settings</Text><Link url="https://claude.ai/settings/data-privacy-controls" /></Box>;
+    t2 = <Box flexDirection="column"><Text bold={true}>Help improve Claude</Text><Text>Allow the use of your chats and coding sessions to train and improve Anthropic AI models. You can change this anytime in Privacy Settings</Text><Link url={getPrivacySettingsUrl()} /></Box>;
     $[2] = t2;
   } else {
     t2 = $[2];
@@ -425,7 +426,7 @@ export function PrivacySettingsDialog(t0) {
   }
   let t5;
   if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
-    t5 = <Text>Review and manage your privacy settings at{" "}<Link url="https://claude.ai/settings/data-privacy-controls" /></Text>;
+    t5 = <Text>Review and manage your privacy settings at{" "}<Link url={getPrivacySettingsUrl()} /></Text>;
     $[9] = t5;
   } else {
     t5 = $[9];

@@ -15,6 +15,38 @@ function getOauthConfigType(): OauthConfigType {
   return 'prod'
 }
 
+export function getProdOauthApiBaseUrl(): string {
+  return 'https://api.anthropic.com'
+}
+
+export function getProdOauthConsoleOrigin(): string {
+  return 'https://platform.claude.com'
+}
+
+export function getProdOauthClaudeAiOrigin(): string {
+  return 'https://claude.ai'
+}
+
+export function getProdOauthMcpProxyUrl(): string {
+  return 'https://mcp-proxy.anthropic.com'
+}
+
+export function getStagingOauthApiBaseUrl(): string {
+  return 'https://api-staging.anthropic.com'
+}
+
+export function getStagingOauthConsoleOrigin(): string {
+  return 'https://platform.staging.ant.dev'
+}
+
+export function getStagingOauthClaudeAiOrigin(): string {
+  return 'https://claude-ai.staging.ant.dev'
+}
+
+export function getStagingOauthMcpProxyUrl(): string {
+  return 'https://mcp-proxy-staging.anthropic.com'
+}
+
 export function fileSuffixForOauthConfig(): string {
   if (process.env.CLAUDE_CODE_CUSTOM_OAUTH_URL) {
     return '-custom-oauth'
@@ -82,24 +114,24 @@ type OauthConfig = {
 
 // Production OAuth configuration - Used in normal operation
 const PROD_OAUTH_CONFIG = {
-  BASE_API_URL: 'https://api.anthropic.com',
-  CONSOLE_AUTHORIZE_URL: 'https://platform.claude.com/oauth/authorize',
+  BASE_API_URL: getProdOauthApiBaseUrl(),
+  CONSOLE_AUTHORIZE_URL: `${getProdOauthConsoleOrigin()}/oauth/authorize`,
   // Bounces through claude.com/cai/* so CLI sign-ins connect to claude.com
   // visits for attribution. 307s to claude.ai/oauth/authorize in two hops.
   CLAUDE_AI_AUTHORIZE_URL: 'https://claude.com/cai/oauth/authorize',
-  CLAUDE_AI_ORIGIN: 'https://claude.ai',
-  TOKEN_URL: 'https://platform.claude.com/v1/oauth/token',
-  API_KEY_URL: 'https://api.anthropic.com/api/oauth/claude_cli/create_api_key',
-  ROLES_URL: 'https://api.anthropic.com/api/oauth/claude_cli/roles',
+  CLAUDE_AI_ORIGIN: getProdOauthClaudeAiOrigin(),
+  TOKEN_URL: `${getProdOauthConsoleOrigin()}/v1/oauth/token`,
+  API_KEY_URL: `${getProdOauthApiBaseUrl()}/api/oauth/claude_cli/create_api_key`,
+  ROLES_URL: `${getProdOauthApiBaseUrl()}/api/oauth/claude_cli/roles`,
   CONSOLE_SUCCESS_URL:
-    'https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code',
+    `${getProdOauthConsoleOrigin()}/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code`,
   CLAUDEAI_SUCCESS_URL:
-    'https://platform.claude.com/oauth/code/success?app=claude-code',
-  MANUAL_REDIRECT_URL: 'https://platform.claude.com/oauth/code/callback',
+    `${getProdOauthConsoleOrigin()}/oauth/code/success?app=claude-code`,
+  MANUAL_REDIRECT_URL: `${getProdOauthConsoleOrigin()}/oauth/code/callback`,
   CLIENT_ID: '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
   // No suffix for production config
   OAUTH_FILE_SUFFIX: '',
-  MCP_PROXY_URL: 'https://mcp-proxy.anthropic.com',
+  MCP_PROXY_URL: getProdOauthMcpProxyUrl(),
   MCP_PROXY_PATH: '/v1/mcp/{server_id}',
 } as const
 
@@ -111,33 +143,29 @@ const PROD_OAUTH_CONFIG = {
  * See: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00
  */
 export const MCP_CLIENT_METADATA_URL =
-  'https://claude.ai/oauth/claude-code-client-metadata'
+  `${getProdOauthClaudeAiOrigin()}/oauth/claude-code-client-metadata`
 
 // Staging OAuth configuration - only included in ant builds with staging flag
 // Uses literal check for dead code elimination
 const STAGING_OAUTH_CONFIG =
   process.env.USER_TYPE === 'ant'
     ? ({
-        BASE_API_URL: 'https://api-staging.anthropic.com',
-        CONSOLE_AUTHORIZE_URL:
-          'https://platform.staging.ant.dev/oauth/authorize',
-        CLAUDE_AI_AUTHORIZE_URL:
-          'https://claude-ai.staging.ant.dev/oauth/authorize',
-        CLAUDE_AI_ORIGIN: 'https://claude-ai.staging.ant.dev',
-        TOKEN_URL: 'https://platform.staging.ant.dev/v1/oauth/token',
+        BASE_API_URL: getStagingOauthApiBaseUrl(),
+        CONSOLE_AUTHORIZE_URL: `${getStagingOauthConsoleOrigin()}/oauth/authorize`,
+        CLAUDE_AI_AUTHORIZE_URL: `${getStagingOauthClaudeAiOrigin()}/oauth/authorize`,
+        CLAUDE_AI_ORIGIN: getStagingOauthClaudeAiOrigin(),
+        TOKEN_URL: `${getStagingOauthConsoleOrigin()}/v1/oauth/token`,
         API_KEY_URL:
-          'https://api-staging.anthropic.com/api/oauth/claude_cli/create_api_key',
+          `${getStagingOauthApiBaseUrl()}/api/oauth/claude_cli/create_api_key`,
         ROLES_URL:
-          'https://api-staging.anthropic.com/api/oauth/claude_cli/roles',
+          `${getStagingOauthApiBaseUrl()}/api/oauth/claude_cli/roles`,
         CONSOLE_SUCCESS_URL:
-          'https://platform.staging.ant.dev/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code',
-        CLAUDEAI_SUCCESS_URL:
-          'https://platform.staging.ant.dev/oauth/code/success?app=claude-code',
-        MANUAL_REDIRECT_URL:
-          'https://platform.staging.ant.dev/oauth/code/callback',
+          `${getStagingOauthConsoleOrigin()}/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code`,
+        CLAUDEAI_SUCCESS_URL: `${getStagingOauthConsoleOrigin()}/oauth/code/success?app=claude-code`,
+        MANUAL_REDIRECT_URL: `${getStagingOauthConsoleOrigin()}/oauth/code/callback`,
         CLIENT_ID: '22422756-60c9-4084-8eb7-27705fd5cf9a',
         OAUTH_FILE_SUFFIX: '-staging-oauth',
-        MCP_PROXY_URL: 'https://mcp-proxy-staging.anthropic.com',
+        MCP_PROXY_URL: getStagingOauthMcpProxyUrl(),
         MCP_PROXY_PATH: '/v1/mcp/{server_id}',
       } as const)
     : undefined

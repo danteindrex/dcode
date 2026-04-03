@@ -1,9 +1,4 @@
-import {
-  type ClaudeForChromeContext,
-  createClaudeForChromeMcpServer,
-  type Logger,
-  type PermissionMode,
-} from '@ant/claude-for-chrome-mcp'
+import { createRequire } from 'module'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { format } from 'util'
 import { shutdownDatadog } from '../../services/analytics/datadog.js'
@@ -13,17 +8,81 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../../services/analytics/index.js'
+import { getChromeExtensionUrl } from '../../constants/product.js'
 import { initializeAnalyticsSink } from '../../services/analytics/sink.js'
 import { getClaudeAIOAuthTokens } from '../auth.js'
 import { enableConfigs, getGlobalConfig, saveGlobalConfig } from '../config.js'
 import { logForDebugging } from '../debug.js'
 import { isEnvTruthy } from '../envUtils.js'
 import { sideQuery } from '../sideQuery.js'
-import { getAllSocketPaths, getSecureSocketPath } from './common.js'
+import {
+  CLAUDE_AI_HOSTNAME,
+  CLAUDE_IN_CHROME_BUG_REPORT_URL,
+  CLAUDE_IN_CHROME_PRODUCT_NAME,
+  getAllSocketPaths,
+  getSecureSocketPath,
+} from './common.js'
 
-const EXTENSION_DOWNLOAD_URL = 'https://claude.ai/chrome'
-const BUG_REPORT_URL =
-  'https://github.com/anthropics/claude-code/issues/new?labels=bug,claude-in-chrome'
+const require = createRequire(import.meta.url)
+
+type PermissionMode = 'ask' | 'skip_all_permission_checks' | 'follow_a_plan'
+
+type Logger = {
+  silly(message: string, ...args: unknown[]): void
+  debug(message: string, ...args: unknown[]): void
+  info(message: string, ...args: unknown[]): void
+  warn(message: string, ...args: unknown[]): void
+  error(message: string, ...args: unknown[]): void
+}
+
+type ClaudeForChromeContext = {
+  serverName: string
+  logger: Logger
+  socketPath: string
+  getSocketPaths: () => string[]
+  clientTypeId: string
+  onAuthenticationError: () => void
+  onToolCallDisconnected: () => string
+  onExtensionPaired: (deviceId: string, name: string) => void
+  getPersistedDeviceId: () => string | undefined
+  bridgeConfig?: {
+    url: string
+    getUserId: () => Promise<string | undefined>
+    getOAuthToken: () => Promise<string>
+    devUserId?: string
+  }
+  initialPermissionMode?: PermissionMode
+  callAnthropicMessages?: (req: {
+    model: string
+    max_tokens: number
+    system: string
+    messages: Parameters<typeof sideQuery>[0]['messages']
+    stop_sequences?: string[]
+    signal?: AbortSignal
+  }) => Promise<{
+    content: Array<{ type: 'text'; text: string }>
+    stop_reason: string | null
+    usage?: { input_tokens: number; output_tokens: number }
+  }>
+  trackEvent: (
+    eventName: string,
+    metadata?: Record<string, string | number | boolean | undefined>,
+  ) => void
+}
+
+function loadChromeMcpModule(): {
+  createClaudeForChromeMcpServer: (
+    context: ClaudeForChromeContext,
+  ) => { connect: (transport: StdioServerTransport) => Promise<void> }
+} {
+  return require('@ant/claude-for-chrome-mcp') as {
+    createClaudeForChromeMcpServer: (
+      context: ClaudeForChromeContext,
+    ) => { connect: (transport: StdioServerTransport) => Promise<void> }
+  }
+}
+
+const EXTENSION_DOWNLOAD_URL = getChromeExtensionUrl()
 
 // String metadata keys safe to forward to analytics. Keys like error_message
 // are excluded because they could contain page content or user data.
@@ -102,18 +161,18 @@ export function createChromeContext(
     }
   }
   return {
-    serverName: 'Claude in Chrome',
+    serverName: CLAUDE_IN_CHROME_PRODUCT_NAME,
     logger,
     socketPath: getSecureSocketPath(),
     getSocketPaths: getAllSocketPaths,
     clientTypeId: 'claude-code',
     onAuthenticationError: () => {
       logger.warn(
-        'Authentication error occurred. Please ensure you are logged into the Claude browser extension with the same claude.ai account as Claude Code.',
+        `Authentication error occurred. Please ensure you are logged into the Claude browser extension with the same ${CLAUDE_AI_HOSTNAME} account as Claude Code.`,
       )
     },
     onToolCallDisconnected: () => {
-      return `Browser extension is not connected. Please ensure the Claude browser extension is installed and running (${EXTENSION_DOWNLOAD_URL}), and that you are logged into claude.ai with the same account as Claude Code. If this is your first time connecting to Chrome, you may need to restart Chrome for the installation to take effect. If you continue to experience issues, please report a bug: ${BUG_REPORT_URL}`
+      return `Browser extension is not connected. Please ensure the Claude browser extension is installed and running (${EXTENSION_DOWNLOAD_URL}), and that you are logged into ${CLAUDE_AI_HOSTNAME} with the same account as Claude Code. If this is your first time connecting to Chrome, you may need to restart Chrome for the installation to take effect. If you continue to experience issues, please report a bug: ${CLAUDE_IN_CHROME_BUG_REPORT_URL}`
     },
     onExtensionPaired: (deviceId: string, name: string) => {
       saveGlobalConfig(config => {
@@ -249,6 +308,7 @@ export async function runClaudeInChromeMcpServer(): Promise<void> {
   enableConfigs()
   initializeAnalyticsSink()
   const context = createChromeContext()
+  const { createClaudeForChromeMcpServer } = loadChromeMcpModule()
 
   const server = createClaudeForChromeMcpServer(context)
   const transport = new StdioServerTransport()

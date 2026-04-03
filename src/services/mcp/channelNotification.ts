@@ -20,6 +20,7 @@ import type { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod/v4'
 import { type ChannelEntry, getAllowedChannels } from '../../bootstrap/state.js'
 import { CHANNEL_TAG } from '../../constants/xml.js'
+import { getWebAppAuthLabel } from '../../constants/product.js'
 import {
   getClaudeAIOAuthTokens,
   getSubscriptionType,
@@ -223,7 +224,7 @@ export function gateChannelServer(
     return {
       action: 'skip',
       kind: 'auth',
-      reason: 'channels requires claude.ai authentication (run /login)',
+      reason: `channels requires ${getWebAppAuthLabel()} (run /login)`,
     }
   }
 

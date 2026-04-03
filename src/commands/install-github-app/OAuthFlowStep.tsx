@@ -207,7 +207,7 @@ export function OAuthFlowStep({
             {!showPastePrompt && <Box>
                 <Spinner />
                 <Text>
-                  Opening browser to sign in with your Claude account…
+                  Opening browser to sign in with your web account…
                 </Text>
               </Box>}
 
@@ -246,12 +246,12 @@ export function OAuthFlowStep({
   return <Box flexDirection="column" gap={1} tabIndex={0} autoFocus onKeyDown={handleKeyDown}>
       {/* Show header inline only for initial starting state */}
       {oauthStatus.state === 'starting' && <Box flexDirection="column" gap={1} paddingBottom={1}>
-          <Text bold>Create Authentication Token</Text>
+          <Text bold>Create Access Token</Text>
           <Text dimColor>Creating a long-lived token for GitHub Actions</Text>
         </Box>}
       {/* Show header for non-starting states (to avoid duplicate with inline header)*/}
       {oauthStatus.state !== 'success' && oauthStatus.state !== 'starting' && oauthStatus.state !== 'processing' && <Box key="header" flexDirection="column" gap={1} paddingBottom={1}>
-            <Text bold>Create Authentication Token</Text>
+            <Text bold>Create Access Token</Text>
             <Text dimColor>Creating a long-lived token for GitHub Actions</Text>
           </Box>}
       {/* Show URL when paste prompt is visible */}

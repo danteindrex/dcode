@@ -10,6 +10,10 @@ import { shouldOfferTerminalSetup } from '../../commands/terminalSetup/terminalS
 import { getDesktopUpsellConfig } from '../../components/DesktopUpsell/DesktopUpsellStartup.js'
 import { color } from '../../components/design-system/color.js'
 import { shouldShowOverageCreditUpsell } from '../../components/LogoV2/OverageCreditUpsell.js'
+import {
+  getDesktopDownloadPageUrl,
+  getWebAppRemoteControlUrl,
+} from '../../constants/product.js'
 import { getShortcutDisplay } from '../../keybindings/shortcutFormat.js'
 import { isKairosCronEnabled } from '../../tools/ScheduleCronTool/prompt.js'
 import { is1PApiCustomer } from '../../utils/auth.js'
@@ -437,7 +441,7 @@ const externalTips: Tip[] = [
   {
     id: 'desktop-app',
     content: async () =>
-      'Run Claude Code locally or remotely using the Claude desktop app: clau.de/desktop',
+      `Run Claude Code locally or remotely using the Claude desktop app: ${getDesktopDownloadPageUrl()}`,
     cooldownSessions: 15,
     isRelevant: async () => getPlatform() !== 'linux',
   },
@@ -459,7 +463,7 @@ const externalTips: Tip[] = [
   {
     id: 'web-app',
     content: async () =>
-      'Run tasks in the cloud while you keep coding locally · clau.de/web',
+      `Run tasks in the cloud while you keep coding locally · ${getWebAppRemoteControlUrl()}`,
     cooldownSessions: 15,
     isRelevant: async () => true,
   },

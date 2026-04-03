@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { getOauthConfig } from '../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../services/backend/targets.js'
 import type { SDKMessage } from '../entrypoints/agentSdkTypes.js'
 import type {
   SDKControlCancelRequest,
@@ -105,7 +105,7 @@ export class SessionsWebSocket {
 
     this.state = 'connecting'
 
-    const baseUrl = getOauthConfig().BASE_API_URL.replace('https://', 'wss://')
+    const baseUrl = toSessionsWebSocketBaseUrl(getAppBackendBaseUrl())
     const url = `${baseUrl}/v1/sessions/ws/${this.sessionId}/subscribe?organization_uuid=${this.orgUuid}`
 
     logForDebugging(`[SessionsWebSocket] Connecting to ${url}`)
@@ -401,4 +401,8 @@ export class SessionsWebSocket {
       void this.connect()
     }, 500)
   }
+}
+
+export function toSessionsWebSocketBaseUrl(httpBaseUrl: string): string {
+  return httpBaseUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:')
 }

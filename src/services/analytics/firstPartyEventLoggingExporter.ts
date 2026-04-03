@@ -31,6 +31,7 @@ import { sleep } from '../../utils/sleep.js'
 import { jsonStringify } from '../../utils/slowOperations.js'
 import { getClaudeCodeUserAgent } from '../../utils/userAgent.js'
 import { isOAuthTokenExpired } from '../oauth/client.js'
+import { getTelemetryBaseUrl } from '../backend/targets.js'
 import { stripProtoFields } from './index.js'
 import { type EventMetadata, to1PEventFormat } from './metadata.js'
 
@@ -111,11 +112,7 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
   ) {
     // Default: prod, except when ANTHROPIC_BASE_URL is explicitly staging.
     // Overridable via tengu_1p_event_batch_config.baseUrl.
-    const baseUrl =
-      options.baseUrl ||
-      (process.env.ANTHROPIC_BASE_URL === 'https://api-staging.anthropic.com'
-        ? 'https://api-staging.anthropic.com'
-        : 'https://api.anthropic.com')
+    const baseUrl = options.baseUrl || getTelemetryBaseUrl()
 
     this.endpoint = `${baseUrl}${options.path || '/api/event_logging/batch'}`
 

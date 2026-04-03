@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { z } from 'zod/v4'
-import { getOauthConfig } from '../../constants/oauth.js'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
+import { getAppBackendBaseUrl } from '../../services/backend/targets.js'
 import { getOrganizationUUID } from '../../services/oauth/client.js'
 import { isPolicyAllowed } from '../../services/policyLimits/index.js'
 import type { ToolUseContext } from '../../Tool.js'
@@ -80,7 +80,7 @@ export const RemoteTriggerTool = buildTool({
     const accessToken = getClaudeAIOAuthTokens()?.accessToken
     if (!accessToken) {
       throw new Error(
-        'Not authenticated with a claude.ai account. Run /login and try again.',
+        'Not authenticated with a supported web-app account. Run /login and try again.',
       )
     }
     const orgUUID = await getOrganizationUUID()
@@ -88,7 +88,7 @@ export const RemoteTriggerTool = buildTool({
       throw new Error('Unable to resolve organization UUID.')
     }
 
-    const base = `${getOauthConfig().BASE_API_URL}/v1/code/triggers`
+    const base = `${getAppBackendBaseUrl()}/v1/code/triggers`
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',

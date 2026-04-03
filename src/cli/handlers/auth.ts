@@ -20,6 +20,7 @@ import {
 import { getOauthProfileFromOauthToken } from '../../services/oauth/getOauthProfile.js'
 import { OAuthService } from '../../services/oauth/index.js'
 import type { OAuthTokens } from '../../services/oauth/types.js'
+import { loginWithOpenAICodexOAuth } from '../../providers/openai-codex/oauth.js'
 import {
   clearOAuthTokenCache,
   getAnthropicApiKeyWithSource,
@@ -227,6 +228,39 @@ export async function authLogin({
   } finally {
     oauthService.cleanup()
   }
+}
+
+export async function authLoginOpenAICodex(): Promise<void> {
+  try {
+    const result = await loginWithOpenAICodexOAuth({
+      onAuthorizeUrl: async url => {
+        process.stdout.write('Opening browser to sign in to OpenAI Codex…\n')
+        process.stdout.write(`If the browser did not open, visit: ${url}\n`)
+      },
+    })
+
+    process.stdout.write(
+      result.email
+        ? `OpenAI Codex login successful (${result.email}).\n`
+        : 'OpenAI Codex login successful.\n',
+    )
+    process.exit(0)
+  } catch (err) {
+    logError(err)
+    process.stderr.write(`OpenAI Codex login failed: ${errorMessage(err)}\n`)
+    process.exit(1)
+  }
+}
+
+export async function authLoginProviderSetup(provider: string): Promise<void> {
+  const message =
+    provider === 'openai'
+      ? 'OpenAI uses API-key configuration. Set OPENAI_API_KEY, then run the CLI with an openai/... model.\n'
+      : provider === 'gemini'
+        ? 'Gemini uses API-key configuration. Set GEMINI_API_KEY or GOOGLE_API_KEY, then run the CLI with a gemini/... model.\n'
+        : 'Ollama uses a local runtime. Start Ollama, ensure the model is installed, and optionally set OLLAMA_HOST.\n'
+  process.stdout.write(message)
+  process.exit(0)
 }
 
 export async function authStatus(opts: {

@@ -2,7 +2,10 @@ import { feature } from 'bun:bundle'
 import { randomUUID } from 'crypto'
 import { hostname, tmpdir } from 'os'
 import { basename, join, resolve } from 'path'
-import { getRemoteSessionUrl } from '../constants/product.js'
+import {
+  getRemoteSessionUrl,
+  getWebAppRemoteControlUrl,
+} from '../constants/product.js'
 import { shutdownDatadog } from '../services/analytics/datadog.js'
 import { shutdown1PEventLogging } from '../services/analytics/firstPartyEventLogger.js'
 import { checkGate_CACHED_OR_BLOCKING } from '../services/analytics/growthbook.js'
@@ -1918,12 +1921,12 @@ async function printHelp(): Promise<void> {
 `
     : ''
   const help = `
-Remote Control - Connect your local environment to claude.ai/code
+Remote Control - Connect your local environment to ${getWebAppRemoteControlUrl()}
 
 USAGE
   claude remote-control [options]
 OPTIONS
-  --name <name>                    Name for the session (shown in claude.ai/code)
+  --name <name>                    Name for the session (shown in the web app)
 ${
   feature('KAIROS')
     ? `  -c, --continue                   Resume the last session in this directory
@@ -1939,11 +1942,11 @@ ${
 ${serverOptions}
 DESCRIPTION
   Remote Control allows you to control sessions on your local device from
-  claude.ai/code (https://claude.ai/code). Run this command in the
-  directory you want to work in, then connect from the Claude app or web.
+  web app (${getWebAppRemoteControlUrl()}). Run this command in the
+  directory you want to work in, then connect from the web app or companion app.
 ${serverDescription}
 NOTES
-  - You must be logged in with a Claude account that has a subscription
+  - You must be logged in with an account that has a supported web-app subscription
   - Run \`claude\` first in the directory to accept the workspace trust dialog
 ${serverNote}`
   // biome-ignore lint/suspicious/noConsole: intentional help output
@@ -2095,7 +2098,11 @@ export async function bridgeMain(args: string[]): Promise<void> {
   // Resolve auth
   const { clearOAuthTokenCache, checkAndRefreshOAuthTokenIfNeeded } =
     await import('../utils/auth.js')
-  const { getBridgeAccessToken, getBridgeBaseUrl } = await import(
+  const {
+    getBridgeAccessToken,
+    getBridgeBaseUrl,
+    getBridgeSessionIngressUrl,
+  } = await import(
     './bridgeConfig.js'
   )
 
@@ -2122,7 +2129,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     })
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(
-      '\nRemote Control lets you access this CLI session from the web (claude.ai/code)\nor the Claude app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n',
+      `\nRemote Control lets you access this CLI session from the web (${getWebAppRemoteControlUrl()})\nor the companion app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n`,
     )
     const answer = await new Promise<string>(resolve => {
       rl.question('Enable Remote Control? (y/n) ', resolve)
@@ -2192,16 +2199,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     process.exit(1)
   }
 
-  // Session ingress URL for WebSocket connections. In production this is the
-  // same as baseUrl (Envoy routes /v1/session_ingress/* to session-ingress).
-  // Locally, session-ingress runs on a different port (9413) than the
-  // contain-provide-api (8211), so CLAUDE_BRIDGE_SESSION_INGRESS_URL must be
-  // set explicitly. Ant-only, matching CLAUDE_BRIDGE_BASE_URL.
-  const sessionIngressUrl =
-    process.env.USER_TYPE === 'ant' &&
-    process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
-      ? process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
-      : baseUrl
+  const sessionIngressUrl = getBridgeSessionIngressUrl()
 
   const { getBranch, getRemoteUrl, findGitRoot } = await import(
     '../utils/git.js'
@@ -2252,7 +2250,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     })
     // biome-ignore lint/suspicious/noConsole: intentional dialog output
     console.log(
-      `\nClaude Remote Control is launching in spawn mode which lets you create new sessions in this project from Claude Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
+      `\nRemote Control is launching in spawn mode, which lets you create new sessions in this project from the web app or companion app. Learn more here: ${getWebAppRemoteControlUrl()}\n\n` +
         `Spawn mode for this project:\n` +
         `  [1] same-dir \u2014 sessions share the current directory (default)\n` +
         `  [2] worktree \u2014 each session gets an isolated git worktree\n\n` +
@@ -2839,7 +2837,9 @@ export async function runBridgeHeadless(
     throw new Error(BRIDGE_LOGIN_ERROR)
   }
 
-  const { getBridgeBaseUrl } = await import('./bridgeConfig.js')
+  const { getBridgeBaseUrl, getBridgeSessionIngressUrl } = await import(
+    './bridgeConfig.js'
+  )
   const baseUrl = getBridgeBaseUrl()
   if (
     baseUrl.startsWith('http://') &&
@@ -2850,11 +2850,7 @@ export async function runBridgeHeadless(
       'Remote Control base URL uses HTTP. Only HTTPS or localhost HTTP is allowed.',
     )
   }
-  const sessionIngressUrl =
-    process.env.USER_TYPE === 'ant' &&
-    process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
-      ? process.env.CLAUDE_BRIDGE_SESSION_INGRESS_URL
-      : baseUrl
+  const sessionIngressUrl = getBridgeSessionIngressUrl()
 
   const { getBranch, getRemoteUrl, findGitRoot } = await import(
     '../utils/git.js'

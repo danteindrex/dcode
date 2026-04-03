@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import figures from 'figures';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
+import { getWebAppOrigin } from '../services/backend/targets.js';
 import { Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import { toError } from '../utils/errors.js';
@@ -18,7 +19,7 @@ import { Dialog } from './design-system/Dialog.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
 import { LoadingState } from './design-system/LoadingState.js';
 const DIALOG_TITLE = 'Select Remote Environment';
-const SETUP_HINT = `Configure environments at: https://claude.ai/code`;
+const SETUP_HINT = `Configure environments at: ${getWebAppOrigin()}/code`;
 type Props = {
   onDone: (message?: string) => void;
 };

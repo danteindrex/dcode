@@ -16,8 +16,8 @@ import { lt } from '../utils/semver.js'
 /**
  * Runtime check for bridge mode entitlement.
  *
- * Remote Control requires a claude.ai subscription (the bridge auths to CCR
- * with the claude.ai OAuth token). isClaudeAISubscriber() excludes
+ * Remote Control requires a compatible first-party subscription/login (the
+ * bridge auths to CCR with the web-app OAuth token). isClaudeAISubscriber() excludes
  * Bedrock/Vertex/Foundry, apiKeyHelper/gateway deployments, env-var API keys,
  * and Console API logins — none of which have the OAuth token CCR needs.
  * See github.com/deshaw/anthropic-issues/issues/24.
@@ -70,7 +70,7 @@ export async function isBridgeEnabledBlocking(): Promise<boolean> {
 export async function getBridgeDisabledReason(): Promise<string | null> {
   if (feature('BRIDGE_MODE')) {
     if (!isClaudeAISubscriber()) {
-      return 'Remote Control requires a claude.ai subscription. Run `claude auth login` to sign in with your claude.ai account.'
+      return 'Remote Control requires a supported web-app subscription. Run `claude auth login` to sign in with your web-app account.'
     }
     if (!hasProfileScope()) {
       return 'Remote Control requires a full-scope login token. Long-lived tokens (from `claude setup-token` or CLAUDE_CODE_OAUTH_TOKEN) are limited to inference-only for security reasons. Run `claude auth login` to use Remote Control.'

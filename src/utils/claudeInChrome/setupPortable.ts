@@ -1,21 +1,11 @@
+import { getChromeExtensionUrl } from '../../constants/product.js'
 import { readdir } from 'fs/promises'
 import { homedir } from 'os'
 import { join } from 'path'
 import { isFsInaccessible } from '../errors.js'
+import { getClaudeInChromeExtensionIds } from './common.js'
 
-export const CHROME_EXTENSION_URL = 'https://claude.ai/chrome'
-
-// Production extension ID
-const PROD_EXTENSION_ID = 'fcoeoabgfenejglbffodgkkbkcdhcgfn'
-// Dev extension IDs (for internal use)
-const DEV_EXTENSION_ID = 'dihbgbndebgnbjfmelmegjepbnkhlgni'
-const ANT_EXTENSION_ID = 'dngcpimnedloihjnnfngkgjoidhnaolf'
-
-function getExtensionIds(): string[] {
-  return process.env.USER_TYPE === 'ant'
-    ? [PROD_EXTENSION_ID, DEV_EXTENSION_ID, ANT_EXTENSION_ID]
-    : [PROD_EXTENSION_ID]
-}
+export const CHROME_EXTENSION_URL = getChromeExtensionUrl()
 
 // Must match ChromiumBrowser from common.ts
 export type ChromiumBrowser =
@@ -156,7 +146,7 @@ export async function detectExtensionInstallationPortable(
     return { isInstalled: false, browser: null }
   }
 
-  const extensionIds = getExtensionIds()
+  const extensionIds = getClaudeInChromeExtensionIds()
 
   // Check each browser for the extension
   for (const { browser, path: browserBasePath } of browserPaths) {

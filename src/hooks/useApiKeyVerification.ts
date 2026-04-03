@@ -1,5 +1,9 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getIsNonInteractiveSession } from '../bootstrap/state.js'
+import { useMainLoopModel } from '../hooks/useMainLoopModel.js'
+import { getProviderIdForModel } from '../providers/models.js'
+import { resolveOpenAICodexAuth } from '../providers/openai-codex/auth.js'
+import { hasStoredOpenAICodexOAuth } from '../providers/openai-codex/storage.js'
 import { verifyApiKey } from '../services/api/claude.js'
 import {
   getAnthropicApiKeyWithSource,
@@ -19,34 +23,113 @@ export type ApiKeyVerificationResult = {
   status: VerificationStatus
   reverify: () => Promise<void>
   error: Error | null
+  message: string | null
+}
+
+function getInitialStatusForProvider(
+  providerId: ReturnType<typeof getProviderIdForModel>,
+): VerificationStatus {
+  switch (providerId) {
+    case 'openai-codex':
+      return hasStoredOpenAICodexOAuth() || !!process.env.OPENAI_CODEX_ACCESS_TOKEN
+        ? 'loading'
+        : 'missing'
+    case 'openai':
+      return process.env.OPENAI_API_KEY ? 'valid' : 'missing'
+    case 'gemini':
+      return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+        ? 'valid'
+        : 'missing'
+    case 'ollama':
+      return 'valid'
+    default: {
+      if (!isAnthropicAuthEnabled() || isClaudeAISubscriber()) {
+        return 'valid'
+      }
+      const { key, source } = getAnthropicApiKeyWithSource({
+        skipRetrievingKeyFromApiKeyHelper: true,
+      })
+      if (key || source === 'apiKeyHelper') {
+        return 'loading'
+      }
+      return 'missing'
+    }
+  }
+}
+
+function getStatusMessage(
+  providerId: ReturnType<typeof getProviderIdForModel>,
+  status: VerificationStatus,
+): string | null {
+  if (!['missing', 'invalid', 'error'].includes(status)) {
+    return null
+  }
+
+  switch (providerId) {
+    case 'openai-codex':
+      return 'OpenAI Codex login required · Run /login openai-codex'
+    case 'openai':
+      return 'OpenAI API key missing · Set OPENAI_API_KEY'
+    case 'gemini':
+      return 'Gemini API key missing · Set GEMINI_API_KEY or GOOGLE_API_KEY'
+    case 'ollama':
+      return 'Ollama unavailable · Start Ollama and select an installed model'
+    default:
+      return 'Anthropic authentication missing · Run /login anthropic'
+  }
 }
 
 export function useApiKeyVerification(): ApiKeyVerificationResult {
-  const [status, setStatus] = useState<VerificationStatus>(() => {
-    if (!isAnthropicAuthEnabled() || isClaudeAISubscriber()) {
-      return 'valid'
-    }
-    // Use skipRetrievingKeyFromApiKeyHelper to avoid executing apiKeyHelper
-    // before trust dialog is shown (security: prevents RCE via settings.json)
-    const { key, source } = getAnthropicApiKeyWithSource({
-      skipRetrievingKeyFromApiKeyHelper: true,
-    })
-    // If apiKeyHelper is configured, we have a key source even though we
-    // haven't executed it yet - return 'loading' to indicate we'll verify later
-    if (key || source === 'apiKeyHelper') {
-      return 'loading'
-    }
-    return 'missing'
-  })
+  const mainLoopModel = useMainLoopModel()
+  const providerId = getProviderIdForModel(mainLoopModel)
+  const [status, setStatus] = useState<VerificationStatus>(() =>
+    getInitialStatusForProvider(providerId),
+  )
   const [error, setError] = useState<Error | null>(null)
 
+  useEffect(() => {
+    setError(null)
+    setStatus(getInitialStatusForProvider(providerId))
+  }, [providerId])
+
   const verify = useCallback(async (): Promise<void> => {
+    setError(null)
+
+    if (providerId === 'openai-codex') {
+      try {
+        await resolveOpenAICodexAuth()
+        setStatus('valid')
+      } catch (error) {
+        setError(error as Error)
+        setStatus('missing')
+      }
+      return
+    }
+
+    if (providerId === 'openai') {
+      setStatus(process.env.OPENAI_API_KEY ? 'valid' : 'missing')
+      return
+    }
+
+    if (providerId === 'gemini') {
+      setStatus(
+        process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+          ? 'valid'
+          : 'missing',
+      )
+      return
+    }
+
+    if (providerId === 'ollama') {
+      setStatus('valid')
+      return
+    }
+
     if (!isAnthropicAuthEnabled() || isClaudeAISubscriber()) {
       setStatus('valid')
       return
     }
-    // Warm the apiKeyHelper cache (no-op if not configured), then read from
-    // all sources. getAnthropicApiKeyWithSource() reads the now-warm cache.
+
     await getApiKeyFromApiKeyHelper(getIsNonInteractiveSession())
     const { key: apiKey, source } = getAnthropicApiKeyWithSource()
     if (!apiKey) {
@@ -55,30 +138,23 @@ export function useApiKeyVerification(): ApiKeyVerificationResult {
         setError(new Error('API key helper did not return a valid key'))
         return
       }
-      const newStatus = 'missing'
-      setStatus(newStatus)
+      setStatus('missing')
       return
     }
 
     try {
       const isValid = await verifyApiKey(apiKey, false)
-      const newStatus = isValid ? 'valid' : 'invalid'
-      setStatus(newStatus)
-      return
+      setStatus(isValid ? 'valid' : 'invalid')
     } catch (error) {
-      // This happens when there an error response from the API but it's not an invalid API key error
-      // In this case, we still mark the API key as invalid - but we also log the error so we can
-      // display it to the user to be more helpful
       setError(error as Error)
-      const newStatus = 'error'
-      setStatus(newStatus)
-      return
+      setStatus('error')
     }
-  }, [])
+  }, [providerId])
 
   return {
     status,
     reverify: verify,
     error,
+    message: getStatusMessage(providerId, status),
   }
 }

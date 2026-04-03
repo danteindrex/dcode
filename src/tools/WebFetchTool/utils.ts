@@ -5,6 +5,7 @@ import {
   logEvent,
 } from '../../services/analytics/index.js'
 import { queryHaiku } from '../../services/api/claude.js'
+import { getAppBackendBaseUrl } from '../../services/backend/targets.js'
 import { AbortError } from '../../utils/errors.js'
 import { getWebFetchUserAgent } from '../../utils/http.js'
 import { logError } from '../../utils/log.js'
@@ -181,7 +182,7 @@ export async function checkDomainBlocklist(
   }
   try {
     const response = await axios.get(
-      `https://api.anthropic.com/api/web/domain_info?domain=${encodeURIComponent(domain)}`,
+      `${getAppBackendBaseUrl()}/api/web/domain_info?domain=${encodeURIComponent(domain)}`,
       { timeout: DOMAIN_CHECK_TIMEOUT_MS },
     )
     if (response.status === 200) {

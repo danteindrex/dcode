@@ -1,4 +1,3 @@
-import { BROWSER_TOOLS } from '@ant/claude-for-chrome-mcp'
 import { chmod, mkdir, readFile, writeFile } from 'fs/promises'
 import { homedir } from 'os'
 import { join } from 'path'
@@ -23,18 +22,22 @@ import { getPlatform } from '../platform.js'
 import { jsonStringify } from '../slowOperations.js'
 import {
   CLAUDE_IN_CHROME_MCP_SERVER_NAME,
+  CLAUDE_IN_CHROME_NATIVE_HOST_DESCRIPTION,
+  CLAUDE_IN_CHROME_NATIVE_HOST_IDENTIFIER,
+  getClaudeInChromeExtensionOrigins,
   getAllBrowserDataPaths,
   getAllNativeMessagingHostsDirs,
   getAllWindowsRegistryKeys,
   openInChrome,
 } from './common.js'
+import { getChromeReconnectUrl } from '../../constants/product.js'
+import { getClaudeInChromeBrowserTools } from './browserTools.js'
 import { getChromeSystemPrompt } from './prompt.js'
 import { isChromeExtensionInstalledPortable } from './setupPortable.js'
 
-const CHROME_EXTENSION_RECONNECT_URL = 'https://clau.de/chrome/reconnect'
+const CHROME_EXTENSION_RECONNECT_URL = getChromeReconnectUrl()
 
-const NATIVE_HOST_IDENTIFIER = 'com.anthropic.claude_code_browser_extension'
-const NATIVE_HOST_MANIFEST_NAME = `${NATIVE_HOST_IDENTIFIER}.json`
+const NATIVE_HOST_MANIFEST_NAME = `${CLAUDE_IN_CHROME_NATIVE_HOST_IDENTIFIER}.json`
 
 export function shouldEnableClaudeInChrome(chromeFlag?: boolean): boolean {
   // Disable by default in non-interactive sessions (e.g., SDK, CI)
@@ -94,7 +97,7 @@ export function setupClaudeInChrome(): {
   systemPrompt: string
 } {
   const isNativeBuild = isInBundledMode()
-  const allowedTools = BROWSER_TOOLS.map(
+  const allowedTools = getClaudeInChromeBrowserTools().map(
     tool => `mcp__claude-in-chrome__${tool.name}`,
   )
 
@@ -197,19 +200,11 @@ export async function installChromeNativeHostManifest(
   }
 
   const manifest = {
-    name: NATIVE_HOST_IDENTIFIER,
-    description: 'Claude Code Browser Extension Native Host',
+    name: CLAUDE_IN_CHROME_NATIVE_HOST_IDENTIFIER,
+    description: CLAUDE_IN_CHROME_NATIVE_HOST_DESCRIPTION,
     path: manifestBinaryPath,
     type: 'stdio',
-    allowed_origins: [
-      `chrome-extension://fcoeoabgfenejglbffodgkkbkcdhcgfn/`, // PROD_EXTENSION_ID
-      ...(process.env.USER_TYPE === 'ant'
-        ? [
-            'chrome-extension://dihbgbndebgnbjfmelmegjepbnkhlgni/', // DEV_EXTENSION_ID
-            'chrome-extension://dngcpimnedloihjnnfngkgjoidhnaolf/', // ANT_EXTENSION_ID
-          ]
-        : []),
-    ],
+    allowed_origins: getClaudeInChromeExtensionOrigins(),
   }
 
   const manifestContent = jsonStringify(manifest, null, 2)
@@ -272,7 +267,7 @@ function registerWindowsNativeHosts(manifestPath: string): void {
   const registryKeys = getAllWindowsRegistryKeys()
 
   for (const { browser, key } of registryKeys) {
-    const fullKey = `${key}\\${NATIVE_HOST_IDENTIFIER}`
+    const fullKey = `${key}\\${CLAUDE_IN_CHROME_NATIVE_HOST_IDENTIFIER}`
     // Use reg.exe to add the registry entry
     // https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging
     void execFileNoThrowWithCwd('reg', [

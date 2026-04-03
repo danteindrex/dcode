@@ -1,9 +1,75 @@
+import { getWebAppOrigin } from '../services/backend/targets.js'
+
 export const PRODUCT_URL = 'https://claude.com/claude-code'
+export const PRODUCT_NAME = 'Claude Code'
+export const PRODUCT_DESCRIPTION = 'Agentic coding tool'
 
 // Claude Code Remote session URLs
 export const CLAUDE_AI_BASE_URL = 'https://claude.ai'
 export const CLAUDE_AI_STAGING_BASE_URL = 'https://claude-ai.staging.ant.dev'
 export const CLAUDE_AI_LOCAL_BASE_URL = 'http://localhost:4000'
+
+export function getClaudeAiOrigin(): string {
+  return getWebAppOrigin()
+}
+
+export function getWebAppRemoteControlUrl(): string {
+  return `${getWebAppOrigin()}/code`
+}
+
+export function getPrivacySettingsUrl(): string {
+  return `${getWebAppOrigin()}/settings/data-privacy-controls`
+}
+
+export function getBillingSettingsUrl(): string {
+  return `${getWebAppOrigin()}/settings/billing`
+}
+
+export function getUsageSettingsUrl(isAdmin = false): string {
+  return `${getWebAppOrigin()}${
+    isAdmin ? '/admin-settings/usage' : '/settings/usage'
+  }`
+}
+
+export function getMaxUpgradeUrl(): string {
+  return `${getWebAppOrigin()}/upgrade/max`
+}
+
+export function getDesktopDownloadPageUrl(): string {
+  return `${getWebAppOrigin()}/download`
+}
+
+export function getChromeExtensionUrl(): string {
+  return `${getWebAppOrigin()}/chrome`
+}
+
+export function getChromePermissionsUrl(): string {
+  return `${getWebAppOrigin()}/chrome/permissions`
+}
+
+export function getChromeReconnectUrl(): string {
+  return `${getWebAppOrigin()}/chrome/reconnect`
+}
+
+export function getChromeFocusTabUrl(tabId: string): string {
+  return `${getWebAppOrigin()}/chrome/tab/${tabId}`
+}
+
+export function getConsoleApiKeysUrl(): string {
+  return `${getWebAppOrigin()}/settings/keys`
+}
+
+export function getWebAppHostLabel(): string {
+  return new URL(getWebAppOrigin()).host
+}
+
+export function getWebAppAuthLabel(): string {
+  return `${getWebAppHostLabel()} authentication`
+}
+
+export function getWebAppProxyLabel(): string {
+  return `${getWebAppHostLabel()} proxy`
+}
 
 /**
  * Determine if we're in a staging environment for remote sessions.
@@ -46,7 +112,7 @@ export function getClaudeAiBaseUrl(
   if (isRemoteSessionStaging(sessionId, ingressUrl)) {
     return CLAUDE_AI_STAGING_BASE_URL
   }
-  return CLAUDE_AI_BASE_URL
+  return getClaudeAiOrigin()
 }
 
 /**

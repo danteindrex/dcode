@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { getOauthConfig, OAUTH_BETA_HEADER } from 'src/constants/oauth.js'
+import { OAUTH_BETA_HEADER } from 'src/constants/oauth.js'
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js'
 import type { OAuthProfileResponse } from 'src/services/oauth/types.js'
 import { getAnthropicApiKey } from 'src/utils/auth.js'
 import { getGlobalConfig } from 'src/utils/config.js'
@@ -16,7 +17,7 @@ export async function getOauthProfileFromApiKey(): Promise<
   if (!accountUuid || !apiKey) {
     return
   }
-  const endpoint = `${getOauthConfig().BASE_API_URL}/api/claude_cli_profile`
+  const endpoint = `${getAppBackendBaseUrl()}/api/claude_cli_profile`
   try {
     const response = await axios.get<OAuthProfileResponse>(endpoint, {
       headers: {
@@ -37,7 +38,7 @@ export async function getOauthProfileFromApiKey(): Promise<
 export async function getOauthProfileFromOauthToken(
   accessToken: string,
 ): Promise<OAuthProfileResponse | undefined> {
-  const endpoint = `${getOauthConfig().BASE_API_URL}/api/oauth/profile`
+  const endpoint = `${getAppBackendBaseUrl()}/api/oauth/profile`
   try {
     const response = await axios.get<OAuthProfileResponse>(endpoint, {
       headers: {

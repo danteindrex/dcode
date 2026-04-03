@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { LocalJSXCommandContext } from '../../commands.js';
+import { getMaxUpgradeUrl } from '../../constants/product.js';
 import { getOauthProfileFromOauthToken } from '../../services/oauth/getOauthProfile.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import { getClaudeAIOAuthTokens, isClaudeAISubscriber } from '../../utils/auth.js';
@@ -23,7 +24,7 @@ export async function call(onDone: LocalJSXCommandOnDone, context: LocalJSXComma
         return null;
       }
     }
-    const url = 'https://claude.ai/upgrade/max';
+    const url = getMaxUpgradeUrl();
     await openBrowser(url);
     return <Login startingMessage={'Starting new login following /upgrade. Exit with Ctrl-C to use existing account.'} onDone={success => {
       context.onChangeAPIKey();
@@ -31,7 +32,7 @@ export async function call(onDone: LocalJSXCommandOnDone, context: LocalJSXComma
     }} />;
   } catch (error) {
     logError(error as Error);
-    setTimeout(onDone, 0, 'Failed to open browser. Please visit https://claude.ai/upgrade/max to upgrade.');
+    setTimeout(onDone, 0, `Failed to open browser. Please visit ${getMaxUpgradeUrl()} to upgrade.`);
   }
   return null;
 }

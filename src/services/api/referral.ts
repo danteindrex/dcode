@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getOauthConfig } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import {
   getOauthAccountInfo,
   getSubscriptionType,
@@ -33,7 +33,7 @@ export async function fetchReferralEligibility(
     'x-organization-uuid': orgUUID,
   }
 
-  const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/referral/eligibility`
+  const url = `${getAppBackendBaseUrl()}/api/oauth/organizations/${orgUUID}/referral/eligibility`
 
   const response = await axios.get(url, {
     headers,
@@ -54,7 +54,7 @@ export async function fetchReferralRedemptions(
     'x-organization-uuid': orgUUID,
   }
 
-  const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/referral/redemptions`
+  const url = `${getAppBackendBaseUrl()}/api/oauth/organizations/${orgUUID}/referral/redemptions`
 
   const response = await axios.get<ReferralRedemptionsResponse>(url, {
     headers,

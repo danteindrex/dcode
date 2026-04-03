@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getOauthConfig } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import {
   getClaudeAIOAuthTokens,
   hasProfileScope,
@@ -52,7 +52,7 @@ export async function fetchUtilization(): Promise<Utilization | null> {
     ...authResult.headers,
   }
 
-  const url = `${getOauthConfig().BASE_API_URL}/api/oauth/usage`
+  const url = `${getAppBackendBaseUrl()}/api/oauth/usage`
 
   const response = await axios.get<Utilization>(url, {
     headers,

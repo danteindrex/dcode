@@ -31,9 +31,9 @@ import { join, relative, sep } from 'path'
 import {
   CLAUDE_AI_INFERENCE_SCOPE,
   CLAUDE_AI_PROFILE_SCOPE,
-  getOauthConfig,
   OAUTH_BETA_HEADER,
 } from '../../constants/oauth.js'
+import { getAppBackendBaseUrl } from '../backend/targets.js'
 import {
   getTeamMemPath,
   PathTraversalError,
@@ -162,7 +162,7 @@ function isUsingOAuth(): boolean {
 
 function getTeamMemorySyncEndpoint(repoSlug: string): string {
   const baseUrl =
-    process.env.TEAM_MEMORY_SYNC_URL || getOauthConfig().BASE_API_URL
+    process.env.TEAM_MEMORY_SYNC_URL || getAppBackendBaseUrl()
   return `${baseUrl}/api/claude_code/team_memory?repo=${encodeURIComponent(repoSlug)}`
 }
 

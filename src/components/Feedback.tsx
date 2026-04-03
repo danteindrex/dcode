@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getLastAPIRequest } from 'src/bootstrap/state.js';
 import { logEventTo1P } from 'src/services/analytics/firstPartyEventLogger.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from 'src/services/analytics/index.js';
+import { getAppBackendBaseUrl } from 'src/services/backend/targets.js';
 import { getLastAssistantMessage, normalizeMessagesForAPI } from 'src/utils/messages.js';
 import type { CommandResultDisplay } from '../commands.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
@@ -540,7 +541,7 @@ async function submitFeedback(data: FeedbackData, signal?: AbortSignal): Promise
       'User-Agent': getUserAgent(),
       ...authResult.headers
     };
-    const response = await axios.post('https://api.anthropic.com/api/claude_cli_feedback', {
+    const response = await axios.post(`${getAppBackendBaseUrl()}/api/claude_cli_feedback`, {
       content: jsonStringify(data)
     }, {
       headers,

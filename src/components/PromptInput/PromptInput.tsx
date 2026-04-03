@@ -127,6 +127,7 @@ type Props = {
   toolPermissionContext: ToolPermissionContext;
   setToolPermissionContext: (ctx: ToolPermissionContext) => void;
   apiKeyStatus: VerificationStatus;
+  authStatusMessage?: string | null;
   commands: Command[];
   agents: AgentDefinition[];
   isLoading: boolean;
@@ -197,6 +198,7 @@ function PromptInput({
   toolPermissionContext,
   setToolPermissionContext,
   apiKeyStatus,
+  authStatusMessage,
   commands,
   agents,
   isLoading,
@@ -2291,7 +2293,7 @@ function PromptInput({
     // initial-check effect from re-firing on every slash-completion
     // toggle (PR#22413).
     <Box position="absolute" marginTop={briefOwnsGap ? -2 : -1} height={suggestions.length === 0 && !showAutoModeOptIn ? 1 : 0} width="100%" paddingLeft={2} paddingRight={1} flexDirection="column" justifyContent="flex-end" overflow="hidden">
-          <Notifications apiKeyStatus={apiKeyStatus} autoUpdaterResult={autoUpdaterResult} debug={debug} isAutoUpdating={isAutoUpdating} verbose={verbose} messages={messages} onAutoUpdaterResult={onAutoUpdaterResult} onChangeIsUpdating={setIsAutoUpdating} ideSelection={ideSelection} mcpClients={mcpClients} isInputWrapped={isInputWrapped} />
+          <Notifications apiKeyStatus={apiKeyStatus} authStatusMessage={authStatusMessage} autoUpdaterResult={autoUpdaterResult} debug={debug} isAutoUpdating={isAutoUpdating} verbose={verbose} messages={messages} onAutoUpdaterResult={onAutoUpdaterResult} onChangeIsUpdating={setIsAutoUpdating} ideSelection={ideSelection} mcpClients={mcpClients} isInputWrapped={isInputWrapped} />
         </Box> : null}
     </Box>;
 }

@@ -1,13 +1,22 @@
 import { c as _c } from "react/compiler-runtime";
 import React from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
+import {
+  getChromeExtensionUrl,
+  getChromePermissionsUrl,
+} from '../constants/product.js';
 // eslint-disable-next-line custom-rules/prefer-use-keybindings -- enter to continue
 import { Box, Link, Newline, Text, useInput } from '../ink.js';
+import {
+  CLAUDE_IN_CHROME_BETA_TITLE,
+  CLAUDE_IN_CHROME_DOCS_URL,
+  CLAUDE_IN_CHROME_PRODUCT_NAME,
+} from '../utils/claudeInChrome/common.js';
 import { isChromeExtensionInstalled } from '../utils/claudeInChrome/setup.js';
 import { saveGlobalConfig } from '../utils/config.js';
 import { Dialog } from './design-system/Dialog.js';
-const CHROME_EXTENSION_URL = 'https://claude.ai/chrome';
-const CHROME_PERMISSIONS_URL = 'https://clau.de/chrome/permissions';
+const CHROME_EXTENSION_URL = getChromeExtensionUrl();
+const CHROME_PERMISSIONS_URL = getChromePermissionsUrl();
 type Props = {
   onDone(): void;
 };
@@ -56,7 +65,7 @@ export function ClaudeInChromeOnboarding(t0) {
   }
   let t5;
   if ($[6] !== t4) {
-    t5 = <Text>Claude in Chrome works with the Chrome extension to let you control your browser directly from Claude Code. You can navigate websites, fill forms, capture screenshots, record GIFs, and debug with console logs and network requests.{t4}</Text>;
+    t5 = <Text>{CLAUDE_IN_CHROME_PRODUCT_NAME} works with the Chrome extension to let you control your browser directly from Claude Code. You can navigate websites, fill forms, capture screenshots, record GIFs, and debug with console logs and network requests.{t4}</Text>;
     $[6] = t4;
     $[7] = t5;
   } else {
@@ -72,7 +81,7 @@ export function ClaudeInChromeOnboarding(t0) {
   }
   let t7;
   if ($[10] !== t6) {
-    t7 = <Text dimColor={true}>Site-level permissions are inherited from the Chrome extension. Manage permissions in the Chrome extension settings to control which sites Claude can browse, click, and type on{t6}.</Text>;
+    t7 = <Text dimColor={true}>Site-level permissions are inherited from the Chrome extension. Manage permissions in the Chrome extension settings to control which sites {CLAUDE_IN_CHROME_PRODUCT_NAME} can browse, click, and type on{t6}.</Text>;
     $[10] = t6;
     $[11] = t7;
   } else {
@@ -87,7 +96,7 @@ export function ClaudeInChromeOnboarding(t0) {
   }
   let t9;
   if ($[13] === Symbol.for("react.memo_cache_sentinel")) {
-    t9 = <Text dimColor={true}>For more info, use{" "}{t8}{" "}or visit <Link url="https://code.claude.com/docs/en/chrome" /></Text>;
+    t9 = <Text dimColor={true}>For more info, use{" "}{t8}{" "}or visit <Link url={CLAUDE_IN_CHROME_DOCS_URL} /></Text>;
     $[13] = t9;
   } else {
     t9 = $[13];
@@ -103,7 +112,7 @@ export function ClaudeInChromeOnboarding(t0) {
   }
   let t11;
   if ($[17] !== onDone || $[18] !== t10) {
-    t11 = <Dialog title="Claude in Chrome (Beta)" onCancel={onDone} color="chromeYellow">{t10}</Dialog>;
+    t11 = <Dialog title={CLAUDE_IN_CHROME_BETA_TITLE} onCancel={onDone} color="chromeYellow">{t10}</Dialog>;
     $[17] = onDone;
     $[18] = t10;
     $[19] = t11;

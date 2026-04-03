@@ -5,6 +5,7 @@ import { mkdir, stat } from 'fs/promises'
 import memoize from 'lodash-es/memoize.js'
 import { join } from 'path'
 import { CLAUDE_AI_PROFILE_SCOPE } from 'src/constants/oauth.js'
+import { getProviderIdForModel } from 'src/providers/models.js'
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -1912,6 +1913,12 @@ export type OrgValidationResult =
   | { valid: true }
   | { valid: false; message: string }
 
+function shouldRunAnthropicOrgValidation(
+  modelOverride?: string | null,
+): boolean {
+  return getProviderIdForModel(modelOverride) === 'anthropic'
+}
+
 /**
  * Validate that the active OAuth token belongs to the organization required
  * by `forceLoginOrgUUID` in managed settings. Returns a result object
@@ -1920,11 +1927,17 @@ export type OrgValidationResult =
  * Fails closed: if `forceLoginOrgUUID` is set and we cannot determine the
  * token's org (network error, missing profile data), validation fails.
  */
-export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
+export async function validateForceLoginOrg(
+  modelOverride?: string | null,
+): Promise<OrgValidationResult> {
   // `claude ssh` remote: real auth lives on the local machine and is injected
   // by the proxy. The placeholder token can't be validated against the profile
   // endpoint. The local side already ran this check before establishing the session.
   if (process.env.ANTHROPIC_UNIX_SOCKET) {
+    return { valid: true }
+  }
+
+  if (!shouldRunAnthropicOrgValidation(modelOverride)) {
     return { valid: true }
   }
 

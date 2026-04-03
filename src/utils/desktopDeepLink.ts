@@ -1,6 +1,7 @@
 import { readdir } from 'fs/promises'
 import { join } from 'path'
 import { coerce as semverCoerce } from 'semver'
+import { getWebAppOrigin } from '../services/backend/targets.js'
 import { getSessionId } from '../bootstrap/state.js'
 import { getCwd } from './cwd.js'
 import { logForDebugging } from './debug.js'
@@ -216,7 +217,7 @@ export async function openCurrentSessionInDesktop(): Promise<{
     return {
       success: false,
       error:
-        'Claude Desktop is not installed. Install it from https://claude.ai/download',
+        `Claude Desktop is not installed. Install it from ${getWebAppOrigin()}/download`,
     }
   }
 
